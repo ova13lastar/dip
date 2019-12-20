@@ -10,8 +10,8 @@
 ; AutoIt3Wrapper
 #AutoIt3Wrapper_Res_ProductName=DIP
 #AutoIt3Wrapper_Res_Description=Dématérialisation des Impressions PROGRES
-#AutoIt3Wrapper_Res_ProductVersion=0.0.1
-#AutoIt3Wrapper_Res_FileVersion=0.0.1
+#AutoIt3Wrapper_Res_ProductVersion=0.0.3
+#AutoIt3Wrapper_Res_FileVersion=0.0.3
 #AutoIt3Wrapper_Res_CompanyName=CNAMTS/CPAM_ARTOIS/APPLINAT
 #AutoIt3Wrapper_Res_LegalCopyright=yann.daniel@assurance-maladie.fr
 #AutoIt3Wrapper_Res_Language=1036
@@ -40,6 +40,7 @@ AutoItSetOption("WinTitleMatchMode", 2)
 AutoItSetOption("WinDetectHiddenText", 1)
 AutoItSetOption("MouseCoordMode", 0)
 AutoItSetOption("TrayMenuMode", 3)
+OnAutoItExitRegister("_RestoreOnError")
 OnAutoItExitRegister("_YDTool_ExitApp")
 ; ===============================================================================================================================
 
@@ -117,12 +118,12 @@ _YDLogger_Var("$g_sDefaultPrinterName", $g_sDefaultPrinterName)
 ;~ Global $g_sSiteNetworkPath = ($g_sSite = "ARRAS") ? $g_sProgresLiassesArrasPath : $g_sProgresLiassesLensPath
 ;~ _YDLogger_Var("$g_sSiteNetworkPath", $g_sSiteNetworkPath)
 ;------------------------------
-; On verifie que l'imprimante pdfCreator est bien installee et on l'installe si besoin
+; On reinstalle systematiquement l'imprimante pdfCreator si utilisateur connecte
 Global $g_sLoggerUserName = _YDTool_GetHostLoggedUserName(@ComputerName)
-If Not _IsPdfCreatorPrinterInstalled() And $g_sLoggerUserName <> "" Then
-	_YDLogger_Log("Imprimante " & $g_sPdfCreatorPrinter & " non installee !")
+If $g_sLoggerUserName <> "" Then
 	_InstallPdfCreatorPrinter()
 EndIf
+; On verifie que l'installation s'est bien passee
 If _IsPdfCreatorPrinterInstalled() Then
 	_YDLogger_Log("Imprimante " & $g_sPdfCreatorPrinter & " installee pour utilisateur : " & $g_sLoggerUserName)
 Else
@@ -194,24 +195,19 @@ Func _ModuleLiasses()
 			_YDLogger_Log("Impression démarrée !!!!", $sFuncName)
 			; On suspend PROGRES
 			_YDTool_SuspendProcessSwitch($g_sProgresExeFileName, True)
-			; On bascule sur PDFCreator
-			$i = 0
-			_YDTool_SetDefaultPrinter($g_sPdfCreatorPrinter)
-			While _YDTool_GetDefaultPrinter(@ComputerName) <> $g_sPdfCreatorPrinter
-				$i += 1
-				Sleep(100)
-				_YDTool_SetDefaultPrinter($g_sPdfCreatorPrinter)
-				If $i > 20 Then
-					_YDTool_SetTrayTip(_YDGVars_Get("sAppTitle"), "Bascule impossible vers imprimante : " & $g_sPdfCreatorPrinter, 5000)
-					Return False
-				EndIf
-			WEnd
-			_YDTool_SetTrayTip(_YDGVars_Get("sAppTitle"), "Bascule vers imprimante : " & $g_sPdfCreatorPrinter, 5000)
-			; On lit le fichier GCO_MCO.DAT et on recupere les donnees
+			Sleep(1000)
+			; On tente de lire le fichier GCO_MCO.DAT
 			Local $aNsReportDat
-			_FileReadToArray($g_sProgresLiassesNsReportDatFilePath, $aNsReportDat)
+			_YDLogger_Log("Contenu du fichier " & $g_sProgresLiassesNsReportDatFilePath & " :", $sFuncName, 1)
+			If _FileReadToArray($g_sProgresLiassesNsReportDatFilePath, $aNsReportDat) = 0 Then
+				_YDLogger_Error("Impossible de lire le fichier", $sFuncName)
+				_YDTool_SuspendProcessSwitch($g_sProgresExeFileName, False)
+				Return False
+			EndIf
+			; Si OK, on recupere les donnees
 			For $i = 0 To $aNsReportDat[0]
 				Local $aNsReportDatVar = StringSplit($aNsReportDat[$i], "=")
+				_YDLogger_Log($aNsReportDat[$i], $sFuncName, 1)
 				Switch $aNsReportDatVar[1]
 					Case "LIASSE"
 						Local $sLiasse = $aNsReportDatVar[2]
@@ -221,34 +217,58 @@ Func _ModuleLiasses()
 						Local $sUGE = $aNsReportDatVar[2]
 					Case "AGENT"
 						Local $sAgent = $aNsReportDatVar[2]
+					Case "ACTION"
+						Local $bEcheancierAuto = False
+						If $aNsReportDatVar[2] == "Trait. éch auto" Then
+							$bEcheancierAuto = True
+						EndIf
 				EndSwitch
 			Next
-			Local $sNsReportDatFileDateTime = FileGetTime($g_sProgresLiassesNsReportDatFilePath)
-			Local $sDate = $sNsReportDatFileDateTime[0] & $sNsReportDatFileDateTime[1] & $sNsReportDatFileDateTime[2]
-			Local $sTime = $sNsReportDatFileDateTime[3] & $sNsReportDatFileDateTime[4] & $sNsReportDatFileDateTime[5]
-			$g_sSiteNetworkPath = ($g_sSite = "ARRAS") ? $g_sProgresLiassesArrasPath : $g_sProgresLiassesLensPath
-			_YDLogger_Var("$g_sSiteNetworkPath", $g_sSiteNetworkPath)
-			Local $sAutosaveDirectory = $g_sSiteNetworkPath & "\" & $sDate & "\"
-			Local $sAutosaveFilename = $sDate & "-" & $sTime & "_" & $sCaisse & "_" & $sUGE & "_" & $sLiasse & "_" & $sAgent
-			; On modifie le registre pour modifier le Path et le nom du fichier
-			_YDLogger_Log("Modification du registre", $sFuncName, 1)
-			_YDLogger_Var("$sAutosaveFilename", $sAutosaveFilename, $sFuncName, 1)
-			_YDLogger_Var("$sAutosaveDirectory", $sAutosaveDirectory, $sFuncName, 1)
-			RegWrite("HKEY_CURRENT_USER\Software\PDFCreator\Profiles\" & $g_sPdfCreatorPrinter & "\Program", "AutosaveDirectory", "REG_SZ", $sAutosaveDirectory)
-			RegWrite("HKEY_CURRENT_USER\Software\PDFCreator\Profiles\" & $g_sPdfCreatorPrinter & "\Program", "AutosaveFilename", "REG_SZ", $sAutosaveFilename)
-			RegWrite("HKEY_CURRENT_USER\Software\PDFCreator\Profiles\" & $g_sPdfCreatorPrinter & "\Program", "AutosaveStartStandardProgram", "REG_SZ", $g_sProgresLiassesAutoOpenOutPutFile)
-			; On reactive PROGRES
-			_YDTool_SuspendProcessSwitch($g_sProgresExeFileName, False)
-			; L'impression se lance ...
-			Sleep(1000)
-			; On verifie si l'impression est terminee
-			If _IsPrintStopFromTechLogFile() Then
-				_YDLogger_Log("Impression terminée !", $sFuncName)
-				; On retourne sur l'imprimante par defaut
-				_YDTool_SetDefaultPrinter($g_sDefaultPrinter)
-				_YDTool_SetTrayTip(_YDGVars_Get("sAppTitle"), "Retour sur imprimante : " & $g_sDefaultPrinterName, 5000)
-				; On reactive PROGRES (au cas ou ...)
+			_YDLogger_Var("$bEcheancierAuto", $bEcheancierAuto)
+			If $bEcheancierAuto Then
+				_YDLogger_Log("Echeancier auto : pas de bascule", $sFuncName, 1)
+				; On reactive PROGRES
 				_YDTool_SuspendProcessSwitch($g_sProgresExeFileName, False)
+			Else
+				_YDLogger_Log("Traitement classique : on doit basculer ...", $sFuncName, 1)
+				Local $sNsReportDatFileDateTime = FileGetTime($g_sProgresLiassesNsReportDatFilePath)
+				Local $sDate = $sNsReportDatFileDateTime[0] & $sNsReportDatFileDateTime[1] & $sNsReportDatFileDateTime[2]
+				Local $sTime = $sNsReportDatFileDateTime[3] & $sNsReportDatFileDateTime[4] & $sNsReportDatFileDateTime[5]
+				$g_sSiteNetworkPath = ($g_sSite = "ARRAS") ? $g_sProgresLiassesArrasPath : $g_sProgresLiassesLensPath
+				_YDLogger_Var("$g_sSiteNetworkPath", $g_sSiteNetworkPath)
+				Local $sAutosaveDirectory = $g_sSiteNetworkPath & "\" & $sDate & "\"
+				Local $sAutosaveFilename = $sDate & "-" & $sTime & "_" & $sCaisse & "_" & $sUGE & "_" & $sLiasse & "_" & $sAgent
+				; On modifie le registre pour modifier le Path et le nom du fichier
+				_YDLogger_Log("Modification du registre", $sFuncName, 1)
+				_YDLogger_Var("$sAutosaveFilename", $sAutosaveFilename, $sFuncName, 1)
+				_YDLogger_Var("$sAutosaveDirectory", $sAutosaveDirectory, $sFuncName, 1)
+				RegWrite("HKEY_CURRENT_USER\Software\PDFCreator\Profiles\" & $g_sPdfCreatorPrinter & "\Program", "AutosaveDirectory", "REG_SZ", $sAutosaveDirectory)
+				RegWrite("HKEY_CURRENT_USER\Software\PDFCreator\Profiles\" & $g_sPdfCreatorPrinter & "\Program", "AutosaveFilename", "REG_SZ", $sAutosaveFilename)
+				RegWrite("HKEY_CURRENT_USER\Software\PDFCreator\Profiles\" & $g_sPdfCreatorPrinter & "\Program", "AutosaveStartStandardProgram", "REG_SZ", $g_sProgresLiassesAutoOpenOutPutFile)
+				; On bascule sur PDFCreator
+				$i = 0
+				_YDTool_SetDefaultPrinter($g_sPdfCreatorPrinter)
+				While _YDTool_GetDefaultPrinter(@ComputerName) <> $g_sPdfCreatorPrinter
+					$i += 1
+					Sleep(100)
+					_YDTool_SetDefaultPrinter($g_sPdfCreatorPrinter)
+					If $i > 20 Then
+						_YDTool_SetTrayTip(_YDGVars_Get("sAppTitle"), "Bascule impossible vers imprimante : " & $g_sPdfCreatorPrinter, 5000)
+						Return False
+					EndIf
+				WEnd
+				_YDTool_SetTrayTip(_YDGVars_Get("sAppTitle"), "Bascule vers imprimante : " & $g_sPdfCreatorPrinter, 5000)
+				; On reactive PROGRES
+				_YDTool_SuspendProcessSwitch($g_sProgresExeFileName, False)
+				; L'impression se lance ...
+				Sleep(1000)
+				; On verifie si l'impression est terminee
+				If _IsPrintStopFromTechLogFile() Then
+					_YDLogger_Log("Impression terminée !", $sFuncName)
+					; On retourne sur l'imprimante par defaut
+					_YDTool_SetDefaultPrinter($g_sDefaultPrinter)
+					_YDTool_SetTrayTip(_YDGVars_Get("sAppTitle"), "Retour sur imprimante : " & $g_sDefaultPrinterName, 5000)
+				EndIf
 			EndIf
 		EndIf
 	EndIf
@@ -532,6 +552,29 @@ Func _IsPdfCreatorPrinterInstalled()
 EndFunc
 
 ; #FUNCTION# ====================================================================================================================
+; Description ...: Restauration Imprimante + Reactivation forcee de Progres
+; Syntax ........: _RestoreOnError()
+; Parameters ....:
+; Return values .:
+; Author ........: yann.daniel@assurance-maladie.fr
+; Last Modified .: 18/12/2019
+; Notes .........:
+;================================================================================================================================
+Func _RestoreOnError()
+	Local $sFuncName = "_RestoreOnError"
+	If @error <> 0 Then
+		_YDTool_SetTrayTip(_YDGVars_Get("sAppTitle"), "Une anomalie a été détectée ! " & @CRLF & "Réactivation de PROGRES en cours ..." & @CRLF & "Retour sur imprimante : " & $g_sDefaultPrinterName, 5000, $TIP_ICONASTERISK)
+		; On retourne sur l'imprimante par defaut
+		_YDTool_SetDefaultPrinter($g_sDefaultPrinter)
+		; On retourne sur l'imprimante par defaut
+		If Not _YDTool_SuspendProcessSwitch($g_sProgresExeFileName, False) Then
+			_YDLogger_Error("Erreur lors de la reactivation de Progres !", $sFuncName)
+		EndIf
+		_YDTool_SetTrayTip(_YDGVars_Get("sAppTitle"), "Fermeture de " & _YDGVars_Get("sAppTitle") & " suite à une anomalie !", 5000, $TIP_ICONASTERISK)
+	Endif
+EndFunc
+
+; #FUNCTION# ====================================================================================================================
 ; Description ...: Permet d'installer l'imprimante g_sPdfCreatorPrinter
 ; Syntax.........: _InstallPdfCreatorPrinter()
 ; Parameters ....:
@@ -555,6 +598,35 @@ Func _InstallPdfCreatorPrinter()
 		_YDLogger_Error("Inscriptions registre " & $sRegName & " : NOK !", $sFuncName)
 	EndIf
 	;---------------------------------------
+	$sRegName = 'HKCU_configure_landscape'
+	$iRegError = 0
+	Local $RegData = '4400490050005f00500044004600430072006500610074006f00720000000000000000000000000000000000000000000000'
+	$RegData &= '000000000000000000000000000001040205dc00c40253ef8101020009009a0b3408640001000f0058020200010058020300'
+	$RegData &= '0100410034000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+	$RegData &= '0000000000000000000000000000000000000000000000000000000000000100000000000000010000000200000001000000'
+	$RegData &= '000000000000000000000000000000000000000050524956e230000000000000000000000000000000000000000000000000'
+	$RegData &= '0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+	$RegData &= '00000000000000001800000000001027102710270000102700000000000000000000c4020000000000000000000000000000'
+	$RegData &= '0000000000000000000003000000000000000000100050340300288804000000000000000000000001000000000000000000'
+	$RegData &= '0000000000000000e7b14b4c0300000005000a00ff0000000000000000000000000000000000000000000000000000000000'
+	$RegData &= '0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+	$RegData &= '0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+	$RegData &= '0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+	$RegData &= '0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+	$RegData &= '0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+	$RegData &= '0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+	$RegData &= '0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+	$RegData &= '0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+	$RegData &= '0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+	$RegData &= '00000000000000000000000000000000000000000000000000000000'
+	If RegWrite('HKCU\Printers\DevModePerUser', $g_sPdfCreatorPrinter, 'REG_BINARY', Binary('0x' & $RegData)) <> 1 Then $iRegError += 1
+	If RegWrite('HKCU\Printers\DevModes2', $g_sPdfCreatorPrinter, 'REG_BINARY', Binary('0x' & $RegData)) <> 1 Then $iRegError += 1
+	If $iRegError = 0 Then
+		_YDLogger_Log("Inscriptions registre " & $sRegName & " : OK", $sFuncName)
+	Else
+		_YDLogger_Error("Inscriptions registre " & $sRegName & " : NOK !", $sFuncName)
+	EndIf
+	;---------------------------------------
 	$sRegName = 'HKCU_add_profile'
 	$iRegError = 0
 	Local $sRegData = 'Microsoft Word - |\.docx|\.doc|\Microsoft Excel - |\.xlsx|\.xls|\Microsoft PowerPoint - |\.pptx|\.ppt|'
@@ -562,9 +634,9 @@ Func _InstallPdfCreatorPrinter()
 	If RegWrite('HKCU\Software\PDFCreator\Profiles\' & $g_sPdfCreatorPrinter & '\Ghostscript', 'DirectoryGhostscriptFonts','REG_SZ','') <> 1 Then $iRegError += 1
 	If RegWrite('HKCU\Software\PDFCreator\Profiles\' & $g_sPdfCreatorPrinter & '\Ghostscript', 'DirectoryGhostscriptLibraries','REG_SZ','C:\Program Files\PDFCreator\GS9.05\gs9.05\Lib\') <> 1 Then $iRegError += 1
 	If RegWrite('HKCU\Software\PDFCreator\Profiles\' & $g_sPdfCreatorPrinter & '\Ghostscript', 'DirectoryGhostscriptResource','REG_SZ','') <> 1 Then $iRegError += 1
-	If RegWrite('HKCU\Software\PDFCreator\Profiles\' & $g_sPdfCreatorPrinter & '\Printing', 'Counter','REG_SZ','190') <> 1 Then $iRegError += 1
-	If RegWrite('HKCU\Software\PDFCreator\Profiles\' & $g_sPdfCreatorPrinter & '\Printing', 'DeviceHeightPoints','REG_SZ','842') <> 1 Then $iRegError += 1
-	If RegWrite('HKCU\Software\PDFCreator\Profiles\' & $g_sPdfCreatorPrinter & '\Printing', 'DeviceWidthPoints','REG_SZ','595') <> 1 Then $iRegError += 1
+	If RegWrite('HKCU\Software\PDFCreator\Profiles\' & $g_sPdfCreatorPrinter & '\Printing', 'Counter','REG_SZ','1') <> 1 Then $iRegError += 1
+	If RegWrite('HKCU\Software\PDFCreator\Profiles\' & $g_sPdfCreatorPrinter & '\Printing', 'DeviceHeightPoints','REG_SZ','157') <> 1 Then $iRegError += 1
+	If RegWrite('HKCU\Software\PDFCreator\Profiles\' & $g_sPdfCreatorPrinter & '\Printing', 'DeviceWidthPoints','REG_SZ','222') <> 1 Then $iRegError += 1
 	If RegWrite('HKCU\Software\PDFCreator\Profiles\' & $g_sPdfCreatorPrinter & '\Printing', 'OneFilePerPage','REG_SZ','0') <> 1 Then $iRegError += 1
 	If RegWrite('HKCU\Software\PDFCreator\Profiles\' & $g_sPdfCreatorPrinter & '\Printing', 'Papersize','REG_SZ','a4') <> 1 Then $iRegError += 1
 	If RegWrite('HKCU\Software\PDFCreator\Profiles\' & $g_sPdfCreatorPrinter & '\Printing', 'StampFontColor','REG_SZ','#FF0000') <> 1 Then $iRegError += 1
@@ -644,8 +716,8 @@ Func _InstallPdfCreatorPrinter()
 	If RegWrite('HKCU\Software\PDFCreator\Profiles\' & $g_sPdfCreatorPrinter & '\Printing\Formats\PDF\General', 'PDFGeneralAutorotate','REG_SZ','2') <> 1 Then $iRegError += 1
 	If RegWrite('HKCU\Software\PDFCreator\Profiles\' & $g_sPdfCreatorPrinter & '\Printing\Formats\PDF\General', 'PDFGeneralCompatibility','REG_SZ','2') <> 1 Then $iRegError += 1
 	If RegWrite('HKCU\Software\PDFCreator\Profiles\' & $g_sPdfCreatorPrinter & '\Printing\Formats\PDF\General', 'PDFGeneralDefault','REG_SZ','0') <> 1 Then $iRegError += 1
-	If RegWrite('HKCU\Software\PDFCreator\Profiles\' & $g_sPdfCreatorPrinter & '\Printing\Formats\PDF\General', 'PDFGeneralOverprint','REG_SZ','0') <> 1 Then $iRegError += 1
-	If RegWrite('HKCU\Software\PDFCreator\Profiles\' & $g_sPdfCreatorPrinter & '\Printing\Formats\PDF\General', 'PDFOptimize','REG_SZ','1') <> 1 Then $iRegError += 1
+	If RegWrite('HKCU\Software\PDFCreator\Profiles\' & $g_sPdfCreatorPrinter & '\Printing\Formats\PDF\General', 'PDFGeneralOverprint','REG_SZ','1') <> 1 Then $iRegError += 1
+	If RegWrite('HKCU\Software\PDFCreator\Profiles\' & $g_sPdfCreatorPrinter & '\Printing\Formats\PDF\General', 'PDFOptimize','REG_SZ','0') <> 1 Then $iRegError += 1
 	If RegWrite('HKCU\Software\PDFCreator\Profiles\' & $g_sPdfCreatorPrinter & '\Printing\Formats\PDF\General', 'PDFPageLayout','REG_SZ','0') <> 1 Then $iRegError += 1
 	If RegWrite('HKCU\Software\PDFCreator\Profiles\' & $g_sPdfCreatorPrinter & '\Printing\Formats\PDF\General', 'PDFPageMode','REG_SZ','0') <> 1 Then $iRegError += 1
 	If RegWrite('HKCU\Software\PDFCreator\Profiles\' & $g_sPdfCreatorPrinter & '\Printing\Formats\PDF\General', 'PDFStartPage','REG_SZ','1') <> 1 Then $iRegError += 1
@@ -690,7 +762,7 @@ Func _InstallPdfCreatorPrinter()
 	If RegWrite('HKCU\Software\PDFCreator\Profiles\' & $g_sPdfCreatorPrinter & '\Program', 'AutosaveDirectory','REG_SZ', '') <> 1 Then $iRegError += 1
 	If RegWrite('HKCU\Software\PDFCreator\Profiles\' & $g_sPdfCreatorPrinter & '\Program', 'AutosaveFilename','REG_SZ','') <> 1 Then $iRegError += 1
 	If RegWrite('HKCU\Software\PDFCreator\Profiles\' & $g_sPdfCreatorPrinter & '\Program', 'AutosaveFormat','REG_SZ','0') <> 1 Then $iRegError += 1
-	If RegWrite('HKCU\Software\PDFCreator\Profiles\' & $g_sPdfCreatorPrinter & '\Program', 'AutosaveStartStandardProgram','REG_SZ','0') <> 1 Then $iRegError += 1
+	If RegWrite('HKCU\Software\PDFCreator\Profiles\' & $g_sPdfCreatorPrinter & '\Program', 'AutosaveStartStandardProgram','REG_SZ','1') <> 1 Then $iRegError += 1
 	If RegWrite('HKCU\Software\PDFCreator\Profiles\' & $g_sPdfCreatorPrinter & '\Program', 'ClientComputerResolveIPAddress','REG_SZ','0') <> 1 Then $iRegError += 1
 	If RegWrite('HKCU\Software\PDFCreator\Profiles\' & $g_sPdfCreatorPrinter & '\Program', 'DisableEmail','REG_SZ','0') <> 1 Then $iRegError += 1
 	If RegWrite('HKCU\Software\PDFCreator\Profiles\' & $g_sPdfCreatorPrinter & '\Program', 'DisableUpdateCheck','REG_SZ','0') <> 1 Then $iRegError += 1
@@ -700,7 +772,7 @@ Func _InstallPdfCreatorPrinter()
 	If RegWrite('HKCU\Software\PDFCreator\Profiles\' & $g_sPdfCreatorPrinter & '\Program', 'FilenameSubstitutionsOnlyInTitle','REG_SZ','1') <> 1 Then $iRegError += 1
 	If RegWrite('HKCU\Software\PDFCreator\Profiles\' & $g_sPdfCreatorPrinter & '\Program', 'Language','REG_SZ','french') <> 1 Then $iRegError += 1
 	If RegWrite('HKCU\Software\PDFCreator\Profiles\' & $g_sPdfCreatorPrinter & '\Program', 'LastSaveDirectory','REG_SZ','<MyFiles>\') <> 1 Then $iRegError += 1
-	If RegWrite('HKCU\Software\PDFCreator\Profiles\' & $g_sPdfCreatorPrinter & '\Program', 'LastUpdateCheck','REG_SZ','20190430') <> 1 Then $iRegError += 1
+	If RegWrite('HKCU\Software\PDFCreator\Profiles\' & $g_sPdfCreatorPrinter & '\Program', 'LastUpdateCheck','REG_SZ','20190509') <> 1 Then $iRegError += 1
 	If RegWrite('HKCU\Software\PDFCreator\Profiles\' & $g_sPdfCreatorPrinter & '\Program', 'Logging','REG_SZ','0') <> 1 Then $iRegError += 1
 	If RegWrite('HKCU\Software\PDFCreator\Profiles\' & $g_sPdfCreatorPrinter & '\Program', 'LogLines','REG_SZ','100') <> 1 Then $iRegError += 1
 	If RegWrite('HKCU\Software\PDFCreator\Profiles\' & $g_sPdfCreatorPrinter & '\Program', 'MaximumCountOfPDFArchitectToolTip','REG_SZ','5') <> 1 Then $iRegError += 1
@@ -748,6 +820,7 @@ Func _InstallPdfCreatorPrinter()
 		_YDLogger_Log("Inscriptions registre " & $sRegName & " : OK", $sFuncName)
 	Else
 		_YDLogger_Error("Inscriptions registre " & $sRegName & " : NOK !", $sFuncName)
+		Return False
 	EndIf
 EndFunc
 
