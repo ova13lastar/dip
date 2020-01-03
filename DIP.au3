@@ -10,8 +10,8 @@
 ; AutoIt3Wrapper
 #AutoIt3Wrapper_Res_ProductName=DIP
 #AutoIt3Wrapper_Res_Description=Dématérialisation des Impressions PROGRES
-#AutoIt3Wrapper_Res_ProductVersion=0.0.4
-#AutoIt3Wrapper_Res_FileVersion=0.0.4
+#AutoIt3Wrapper_Res_ProductVersion=0.0.5
+#AutoIt3Wrapper_Res_FileVersion=0.0.5
 #AutoIt3Wrapper_Res_CompanyName=CNAMTS/CPAM_ARTOIS/APPLINAT
 #AutoIt3Wrapper_Res_LegalCopyright=yann.daniel@assurance-maladie.fr
 #AutoIt3Wrapper_Res_Language=1036
@@ -334,22 +334,22 @@ Func _ModuleInjecteurs()
 		; On verifie si l'impression d'un état a démarré
 		If _IsPrintStartFromEtatRelanceDatFile() Then
 			_YDLogger_Log("Impression état RELANCE démarrée !!!!", $sFuncName)
-			$sTestsPath = "C:\APPLILOC\DIP\tests\" & @YEAR & @MON & @MDAY & "-" & @HOUR & @MIN & @SEC & "-" & @MSEC & "_RELANCE.DAT"
+			$sTestsPath = "C:\APPLILOC\DIP\tests\" & @YEAR & @MON & @MDAY & "-" & @HOUR & @MIN & @SEC & "-" & @MSEC & "_01_RELANCE.DAT"
 			_YDTool_CopyFile($g_sProgresInjecteursEtatRelanceDatFilePath, $sTestsPath)
 		EndIf
 		If _IsPrintStartFromEtatRejetDatFile() Then
 			_YDLogger_Log("Impression état REJET démarrée !!!!", $sFuncName)
-			$sTestsPath = "C:\APPLILOC\DIP\tests\" & @YEAR & @MON & @MDAY & "-" & @HOUR & @MIN & @SEC & "-" & @MSEC & "_REJET.DAT"
+			$sTestsPath = "C:\APPLILOC\DIP\tests\" & @YEAR & @MON & @MDAY & "-" & @HOUR & @MIN & @SEC & "-" & @MSEC & "_01_REJET.DAT"
 			_YDTool_CopyFile($g_sProgresInjecteursEtatRejetDatFilePath, $sTestsPath)
 		EndIf
 		If _IsPrintStartFromEtatOkDatFile() Then
 			_YDLogger_Log("Impression état OK démarrée !!!!", $sFuncName)
-			$sTestsPath = "C:\APPLILOC\DIP\tests\" & @YEAR & @MON & @MDAY & "-" & @HOUR & @MIN & @SEC & "-" & @MSEC & "_OK.DAT"
+			$sTestsPath = "C:\APPLILOC\DIP\tests\" & @YEAR & @MON & @MDAY & "-" & @HOUR & @MIN & @SEC & "-" & @MSEC & "_01_OK.DAT"
 			_YDTool_CopyFile($g_sProgresInjecteursEtatOkDatFilePath, $sTestsPath)
 		EndIf
 		If _IsPrintStartFromEtatAvDatFile() Then
 			_YDLogger_Log("Impression état AV démarrée !!!!", $sFuncName)
-			$sTestsPath = "C:\APPLILOC\DIP\tests\" & @YEAR & @MON & @MDAY & "-" & @HOUR & @MIN & @SEC & "-" & @MSEC & "_AV.DAT"
+			$sTestsPath = "C:\APPLILOC\DIP\tests\" & @YEAR & @MON & @MDAY & "-" & @HOUR & @MIN & @SEC & "-" & @MSEC & "_01_AV.DAT"
 			_YDTool_CopyFile($g_sProgresInjecteursEtatAvDatFilePath, $sTestsPath)
 		EndIf
 		If ($g_bProgresInjecteursEtatRelanceDatFileChanged Or $g_bProgresInjecteursEtatRejetDatFileChanged Or $g_bProgresInjecteursEtatOkDatFileChanged Or $g_bProgresInjecteursEtatAvDatFileChanged) Then
@@ -357,22 +357,23 @@ Func _ModuleInjecteurs()
 			_YDTool_SuspendProcessSwitch($g_sProgresExeFileName, True)
 			Sleep(1000)
 			$sTestsPath = "C:\APPLILOC\DIP\tests\" & @YEAR & @MON & @MDAY & "-" & @HOUR & @MIN & @SEC & "-" & @MSEC
-			_YDTool_CopyFile($g_sProgresInjecteursEtatRelanceDatFilePath, $sTestsPath & "_RELANCE.DAT")
-			_YDTool_CopyFile($g_sProgresInjecteursEtatRejetDatFilePath, $sTestsPath & "_REJET.DAT")
-			_YDTool_CopyFile($g_sProgresInjecteursEtatOkDatFilePath, $sTestsPath & "_OK.DAT")
-			_YDTool_CopyFile($g_sProgresInjecteursEtatAvDatFilePath, $sTestsPath & "_AV.DAT")
-			; On suspend PROGRES
-			_YDTool_SuspendProcessSwitch($g_sProgresExeFileName, True)
+			_YDTool_CopyFile($g_sProgresInjecteursEtatRelanceDatFilePath, $sTestsPath & "_02_RELANCE.DAT")
+			_YDTool_CopyFile($g_sProgresInjecteursEtatRejetDatFilePath, $sTestsPath & "_02_REJET.DAT")
+			_YDTool_CopyFile($g_sProgresInjecteursEtatOkDatFilePath, $sTestsPath & "_02_OK.DAT")
+			_YDTool_CopyFile($g_sProgresInjecteursEtatAvDatFilePath, $sTestsPath & "_02_AV.DAT")
+			; On reactive PROGRES
+			_YDTool_SuspendProcessSwitch($g_sProgresExeFileName, False)
 			Sleep(1000)
 			$sTestsPath = "C:\APPLILOC\DIP\tests\" & @YEAR & @MON & @MDAY & "-" & @HOUR & @MIN & @SEC & "-" & @MSEC
-			_YDTool_CopyFile($g_sProgresInjecteursEtatRelanceDatFilePath, $sTestsPath & "_RELANCE.DAT")
-			_YDTool_CopyFile($g_sProgresInjecteursEtatRejetDatFilePath, $sTestsPath & "_REJET.DAT")
-			_YDTool_CopyFile($g_sProgresInjecteursEtatOkDatFilePath, $sTestsPath & "_OK.DAT")
-			_YDTool_CopyFile($g_sProgresInjecteursEtatAvDatFilePath, $sTestsPath & "_AV.DAT")
+			_YDTool_CopyFile($g_sProgresInjecteursEtatRelanceDatFilePath, $sTestsPath & "_03_RELANCE.DAT")
+			_YDTool_CopyFile($g_sProgresInjecteursEtatRejetDatFilePath, $sTestsPath & "_03_REJET.DAT")
+			_YDTool_CopyFile($g_sProgresInjecteursEtatOkDatFilePath, $sTestsPath & "_03_OK.DAT")
+			_YDTool_CopyFile($g_sProgresInjecteursEtatAvDatFilePath, $sTestsPath & "_03_AV.DAT")
 			; On verifie si l'impression est terminee
 			If _IsPrintStopFromInjLogFile() Then
 				_YDLogger_Log("Impression terminée !", $sFuncName)
-				_YDTool_SuspendProcessSwitch($g_sProgresExeFileName, True)
+				; On reactive PROGRES
+				_YDTool_SuspendProcessSwitch($g_sProgresExeFileName, False)
 				; On retourne sur l'imprimante par defaut
 				;_YDTool_SetDefaultPrinter($g_sDefaultPrinter)
 				;_YDTool_SetTrayTip(_YDGVars_Get("sAppTitle"), "Retour sur imprimante : " & $g_sDefaultPrinterName, 5000)
