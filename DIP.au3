@@ -10,8 +10,8 @@
 ; AutoIt3Wrapper
 #AutoIt3Wrapper_Res_ProductName=DIP
 #AutoIt3Wrapper_Res_Description=Dématérialisation des Impressions PROGRES
-#AutoIt3Wrapper_Res_ProductVersion=0.0.3
-#AutoIt3Wrapper_Res_FileVersion=0.0.3
+#AutoIt3Wrapper_Res_ProductVersion=0.0.4
+#AutoIt3Wrapper_Res_FileVersion=0.0.4
 #AutoIt3Wrapper_Res_CompanyName=CNAMTS/CPAM_ARTOIS/APPLINAT
 #AutoIt3Wrapper_Res_LegalCopyright=yann.daniel@assurance-maladie.fr
 #AutoIt3Wrapper_Res_Language=1036
@@ -80,43 +80,82 @@ TraySetState($TRAY_ICONSTATE_SHOW)
 Global $g_sSiteNetworkPath		= "D:\"
 Global $g_iLastLineTechLogFile  = 1
 Global $g_iLastLineNticLogFile  = 1
-; ---
-Global $g_sPdfCreatorPrinter = _YDTool_GetAppConfValue("printers", "printer_name")
-Global $g_sRegexLocalPrinter = _YDTool_GetAppConfValue("printers", "regex_local_printer")
-; ---
-Global $g_sProgresMainPath = _YDTool_GetAppConfValue("progres", "main_path")
-Global $g_sProgresExeFileName = _YDTool_GetAppConfValue("progres", "exe_filename")
+Global $g_iLastLineInjLogFile  = 1
+Global $g_IniSectionName = ""
+; --- INI : printers
+$g_IniSectionName = "printers"
+Global $g_sPdfCreatorPrinter = _YDTool_GetAppConfValue($g_IniSectionName, "printer_name")
+Global $g_sRegexLocalPrinter = _YDTool_GetAppConfValue($g_IniSectionName, "regex_local_printer")
+; --- INI : progres
+$g_IniSectionName = "progres"
+Global $g_sProgresMainPath = _YDTool_GetAppConfValue($g_IniSectionName, "main_path")
+Global $g_sProgresExeFileName = _YDTool_GetAppConfValue($g_IniSectionName, "exe_filename")
 Global $g_sProgresExeFilePath = $g_sProgresMainPath & "\" & $g_sProgresExeFileName
-Global $g_sProgresLogPath = _YDTool_GetAppConfValue("progres", "log_path")
-Global $g_sProgresNsReportPath = _YDTool_GetAppConfValue("progres", "nsreport_path")
+Global $g_sProgresLogPath = _YDTool_GetAppConfValue($g_IniSectionName, "log_path")
+Global $g_sProgresNsReportPath = _YDTool_GetAppConfValue($g_IniSectionName, "nsreport_path")
 Global $g_sProgresTechLogFilePath = $g_sProgresLogPath & "\TECH_" & @YEAR & @MON & @MDAY & ".LOG"
 Global $g_sProgresNticLogFilePath = $g_sProgresLogPath & "\NTIC_" & @YEAR & @MON & @MDAY & ".LOG"
+Global $g_sProgresInjLogFilePath = $g_sProgresLogPath & "\INJ_" & @YEAR & @MON & @MDAY & ".LOG"
 _YDLogger_Var("$g_sProgresExeFilePath", $g_sProgresExeFilePath)
 _YDLogger_Var("$g_sProgresTechLogFilePath", $g_sProgresTechLogFilePath)
 _YDLogger_Var("$g_sProgresNticLogFilePath", $g_sProgresNticLogFilePath)
-; ---
-Global $g_sProgresOuvertureArrasPath = _YDTool_GetAppConfValue("progres_ouverture", "arras_path")
-Global $g_sProgresOuvertureLensPath = _YDTool_GetAppConfValue("progres_ouverture", "lens_path")
-Global $g_sProgresOuvertureAutoOpenOutPutDir = _YDTool_GetAppConfValue("progres_ouverture", "auto_open_output_dir")
-Global $g_sProgresOuvertureWindowTitle = _YDTool_GetAppConfValue("progres_ouverture", "window_title")
-; ---
-Global $g_sProgresLiassesArrasPath = _YDTool_GetAppConfValue("progres_liasses", "arras_path")
-Global $g_sProgresLiassesLensPath = _YDTool_GetAppConfValue("progres_liasses", "lens_path")
-Global $g_sProgresLiassesNsReportDatFileName = _YDTool_GetAppConfValue("progres_liasses", "nsreport_dat_filename")
-Global $g_sProgresLiassesNsReportDatFilePath = $g_sProgresNsReportPath & "\" & $g_sProgresLiassesNsReportDatFileName
-Global $g_sProgresLiassesAutoOpenOutPutFile = _YDTool_GetAppConfValue("progres_liasses", "auto_open_output_file")
-Global $g_sProgresLiassesNsReportDatFileDateTime = (FileExists($g_sProgresLiassesNsReportDatFilePath)) ? _ArrayToString(FileGetTime($g_sProgresLiassesNsReportDatFilePath)) : 0
-Global $g_sProgresLiassesNsReportDatFileChanged = False
-_YDLogger_Var("$g_sProgresLiassesNsReportDatFileDateTime", $g_sProgresLiassesNsReportDatFileDateTime)
-_YDLogger_Var("$g_sProgresLiassesNsReportDatFilePath", $g_sProgresLiassesNsReportDatFilePath)
-_YDLogger_Var("$g_sProgresLiassesNsReportDatFileChanged", $g_sProgresLiassesNsReportDatFileChanged)
+_YDLogger_Var("$g_sProgresInjLogFilePath", $g_sProgresInjLogFilePath)
+; --- INI : progres_ouverture
+$g_IniSectionName = "progres_ouverture"
+Global $g_sProgresOuvertureArrasPath = _YDTool_GetAppConfValue($g_IniSectionName, "arras_path")
+Global $g_sProgresOuvertureLensPath = _YDTool_GetAppConfValue($g_IniSectionName, "lens_path")
+Global $g_sProgresOuvertureAutoOpenOutPutDir = _YDTool_GetAppConfValue($g_IniSectionName, "auto_open_output_dir")
+Global $g_sProgresOuvertureWindowTitle = _YDTool_GetAppConfValue($g_IniSectionName, "window_title")
+; --- INI : progres_liasses
+$g_IniSectionName = "progres_liasses"
+Global $g_sProgresLiassesArrasPath = _YDTool_GetAppConfValue($g_IniSectionName, "arras_path")
+Global $g_sProgresLiassesLensPath = _YDTool_GetAppConfValue($g_IniSectionName, "lens_path")
+Global $g_sProgresLiassesAutoOpenOutPutFile = _YDTool_GetAppConfValue($g_IniSectionName, "auto_open_output_file")
+; MCO
+Global $g_sProgresLiassesMcoDatFileName = _YDTool_GetAppConfValue($g_IniSectionName, "dat_filename")
+Global $g_sProgresLiassesMcoDatFilePath = $g_sProgresNsReportPath & "\" & $g_sProgresLiassesMcoDatFileName
+Global $g_sProgresLiassesMcoDatFileDateTime = (FileExists($g_sProgresLiassesMcoDatFilePath)) ? _ArrayToString(FileGetTime($g_sProgresLiassesMcoDatFilePath)) : 0
+Global $g_bProgresLiassesMcoDatFileChanged = False
+_YDLogger_Var("$g_sProgresLiassesMcoDatFilePath", $g_sProgresLiassesMcoDatFilePath)
+_YDLogger_Var("$g_sProgresLiassesMcoDatFileDateTime", $g_sProgresLiassesMcoDatFileDateTime)
+; --- INI : progres_injecteurs
+$g_IniSectionName = "progres_injecteurs"
+Global $g_sProgresInjecteursEtatArrasPath = _YDTool_GetAppConfValue($g_IniSectionName, "arras_path")
+Global $g_sProgresInjecteursEtatLensPath = _YDTool_GetAppConfValue($g_IniSectionName, "lens_path")
+Global $g_sProgresInjecteursAutoOpenOutPutFile = _YDTool_GetAppConfValue($g_IniSectionName, "auto_open_output_file")
+; Relance
+Global $g_sProgresInjecteursEtatRelanceDatFileName = _YDTool_GetAppConfValue($g_IniSectionName, "etat_relance_dat_filename")
+Global $g_sProgresInjecteursEtatRelanceDatFilePath = $g_sProgresNsReportPath & "\" & $g_sProgresInjecteursEtatRelanceDatFileName
+Global $g_sProgresInjecteursEtatRelanceDatFileDateTime = (FileExists($g_sProgresInjecteursEtatRelanceDatFilePath)) ? _ArrayToString(FileGetTime($g_sProgresInjecteursEtatRelanceDatFilePath)) : 0
+Global $g_bProgresInjecteursEtatRelanceDatFileChanged = False
+_YDLogger_Var("$g_sProgresInjecteursEtatRelanceDatFilePath", $g_sProgresInjecteursEtatRelanceDatFilePath)
+_YDLogger_Var("$g_sProgresInjecteursEtatRelanceDatFileDateTime", $g_sProgresInjecteursEtatRelanceDatFileDateTime)
+; Rejet
+Global $g_sProgresInjecteursEtatRejetDatFileName = _YDTool_GetAppConfValue($g_IniSectionName, "etat_rejet_dat_filename")
+Global $g_sProgresInjecteursEtatRejetDatFilePath = $g_sProgresNsReportPath & "\" & $g_sProgresInjecteursEtatRejetDatFileName
+Global $g_sProgresInjecteursEtatRejetDatFileDateTime = (FileExists($g_sProgresInjecteursEtatRejetDatFilePath)) ? _ArrayToString(FileGetTime($g_sProgresInjecteursEtatRejetDatFilePath)) : 0
+Global $g_bProgresInjecteursEtatRejetDatFileChanged = False
+_YDLogger_Var("$g_sProgresInjecteursEtatRejetDatFilePath", $g_sProgresInjecteursEtatRejetDatFilePath)
+_YDLogger_Var("$g_sProgresInjecteursEtatRejetDatFileDateTime", $g_sProgresInjecteursEtatRejetDatFileDateTime)
+; OK
+Global $g_sProgresInjecteursEtatOkDatFileName = _YDTool_GetAppConfValue($g_IniSectionName, "etat_ok_dat_filename")
+Global $g_sProgresInjecteursEtatOkDatFilePath = $g_sProgresNsReportPath & "\" & $g_sProgresInjecteursEtatOkDatFileName
+Global $g_sProgresInjecteursEtatOkDatFileDateTime = (FileExists($g_sProgresInjecteursEtatOkDatFilePath)) ? _ArrayToString(FileGetTime($g_sProgresInjecteursEtatOkDatFilePath)) : 0
+Global $g_bProgresInjecteursEtatOkDatFileChanged = False
+_YDLogger_Var("$g_sProgresInjecteursEtatOkDatFilePath", $g_sProgresInjecteursEtatOkDatFilePath)
+_YDLogger_Var("$g_sProgresInjecteursEtatOkDatFileDateTime", $g_sProgresInjecteursEtatOkDatFileDateTime)
+; AV
+Global $g_sProgresInjecteursEtatAvDatFileName = _YDTool_GetAppConfValue($g_IniSectionName, "etat_av_dat_filename")
+Global $g_sProgresInjecteursEtatAvDatFilePath = $g_sProgresNsReportPath & "\" & $g_sProgresInjecteursEtatAvDatFileName
+Global $g_sProgresInjecteursEtatAvDatFileDateTime = (FileExists($g_sProgresInjecteursEtatAvDatFilePath)) ? _ArrayToString(FileGetTime($g_sProgresInjecteursEtatAvDatFilePath)) : 0
+Global $g_bProgresInjecteursEtatAvDatFileChanged = False
+_YDLogger_Var("$g_sProgresInjecteursEtatAvDatFilePath", $g_sProgresInjecteursEtatAvDatFilePath)
+_YDLogger_Var("$g_sProgresInjecteursEtatAvDatFileDateTime", $g_sProgresInjecteursEtatAvDatFileDateTime)
 ; ---
 Global $g_sDefaultPrinter = _YDTool_GetDefaultPrinter(@ComputerName)
 Global $g_sDefaultPrinterName = StringRegExpReplace($g_sDefaultPrinter, $g_sRegexLocalPrinter, "")
 Global $g_sSite = _YDTool_GetHostSite(@ComputerName)
 _YDLogger_Var("$g_sDefaultPrinterName", $g_sDefaultPrinterName)
-;~ Global $g_sSiteNetworkPath = ($g_sSite = "ARRAS") ? $g_sProgresLiassesArrasPath : $g_sProgresLiassesLensPath
-;~ _YDLogger_Var("$g_sSiteNetworkPath", $g_sSiteNetworkPath)
 ;------------------------------
 ; On reinstalle systematiquement l'imprimante pdfCreator si utilisateur connecte
 Global $g_sLoggerUserName = _YDTool_GetHostLoggedUserName(@ComputerName)
@@ -140,16 +179,17 @@ While 1
 		Case $iMsg = $idTrayAbout
 			_YDTool_GUIShowAbout()
 		Case Else
+			_ModuleInjecteurs()
 			_ModuleLiasses()
 			_ModuleOuvertures()
 	EndSelect
 	;------------------------------
-    Sleep(10)
+	Sleep(10)
 WEnd
 ; ===============================================================================================================================
 
 ; #FUNCTION# ====================================================================================================================
-; Description ...: permet de verifier le contexte
+; Description ...: Permet de verifier le contexte
 ; Syntax ........: _CheckContext()
 ; Parameters ....:
 ; Return values .: True si OK / False si KO
@@ -180,7 +220,7 @@ EndFunc
 ; Parameters ....:
 ; Return values .:
 ; Author ........: yann.daniel@assurance-maladie.fr
-; Last Modified .: 09/12/2019
+; Last Modified .: 02/01/2020
 ; Notes .........:
 ;================================================================================================================================
 Func _ModuleLiasses()
@@ -191,35 +231,35 @@ Func _ModuleLiasses()
 	; On ne travaille que si PROGRES est lance
 	If ProcessExists($g_sProgresExeFileName) Then
 		; On verifie si l'impression a démarré
-		If _IsPrintStartFromNsReportDatFile() Then
-			_YDLogger_Log("Impression démarrée !!!!", $sFuncName)
+		If _IsPrintStartFromMcoDatFile() Then
+			_YDLogger_Log("Impression liasse démarrée !!!!", $sFuncName)
 			; On suspend PROGRES
 			_YDTool_SuspendProcessSwitch($g_sProgresExeFileName, True)
 			Sleep(1000)
 			; On tente de lire le fichier GCO_MCO.DAT
-			Local $aNsReportDat
-			_YDLogger_Log("Contenu du fichier " & $g_sProgresLiassesNsReportDatFilePath & " :", $sFuncName, 1)
-			If _FileReadToArray($g_sProgresLiassesNsReportDatFilePath, $aNsReportDat) = 0 Then
+			Local $aMcoDat
+			_YDLogger_Log("Contenu du fichier " & $g_sProgresLiassesMcoDatFilePath & " :", $sFuncName, 1)
+			If _FileReadToArray($g_sProgresLiassesMcoDatFilePath, $aMcoDat) = 0 Then
 				_YDLogger_Error("Impossible de lire le fichier", $sFuncName)
 				_YDTool_SuspendProcessSwitch($g_sProgresExeFileName, False)
 				Return False
 			EndIf
 			; Si OK, on recupere les donnees
-			For $i = 0 To $aNsReportDat[0]
-				Local $aNsReportDatVar = StringSplit($aNsReportDat[$i], "=")
-				_YDLogger_Log($aNsReportDat[$i], $sFuncName, 1)
-				Switch $aNsReportDatVar[1]
+			For $i = 0 To $aMcoDat[0]
+				Local $aMcoDatVar = StringSplit($aMcoDat[$i], "=")
+				_YDLogger_Log($aMcoDat[$i], $sFuncName, 1)
+				Switch $aMcoDatVar[1]
 					Case "LIASSE"
-						Local $sLiasse = $aNsReportDatVar[2]
+						Local $sLiasse = $aMcoDatVar[2]
 					Case "CAISSE"
-						Local $sCaisse = $aNsReportDatVar[2]
+						Local $sCaisse = $aMcoDatVar[2]
 					Case "CENTRE"
-						Local $sUGE = $aNsReportDatVar[2]
+						Local $sUGE = $aMcoDatVar[2]
 					Case "AGENT"
-						Local $sAgent = $aNsReportDatVar[2]
+						Local $sAgent = $aMcoDatVar[2]
 					Case "ACTION"
 						Local $bEcheancierAuto = False
-						If $aNsReportDatVar[2] == "Trait. éch auto" Then
+						If $aMcoDatVar[2] == "Trait. éch auto" Then
 							$bEcheancierAuto = True
 						EndIf
 				EndSwitch
@@ -231,9 +271,9 @@ Func _ModuleLiasses()
 				_YDTool_SuspendProcessSwitch($g_sProgresExeFileName, False)
 			Else
 				_YDLogger_Log("Traitement classique : on doit basculer ...", $sFuncName, 1)
-				Local $sNsReportDatFileDateTime = FileGetTime($g_sProgresLiassesNsReportDatFilePath)
-				Local $sDate = $sNsReportDatFileDateTime[0] & $sNsReportDatFileDateTime[1] & $sNsReportDatFileDateTime[2]
-				Local $sTime = $sNsReportDatFileDateTime[3] & $sNsReportDatFileDateTime[4] & $sNsReportDatFileDateTime[5]
+				Local $sMcoDatFileDateTime = FileGetTime($g_sProgresLiassesMcoDatFilePath)
+				Local $sDate = $sMcoDatFileDateTime[0] & $sMcoDatFileDateTime[1] & $sMcoDatFileDateTime[2]
+				Local $sTime = $sMcoDatFileDateTime[3] & $sMcoDatFileDateTime[4] & $sMcoDatFileDateTime[5]
 				$g_sSiteNetworkPath = ($g_sSite = "ARRAS") ? $g_sProgresLiassesArrasPath : $g_sProgresLiassesLensPath
 				_YDLogger_Var("$g_sSiteNetworkPath", $g_sSiteNetworkPath)
 				Local $sAutosaveDirectory = $g_sSiteNetworkPath & "\" & $sDate & "\"
@@ -269,6 +309,73 @@ Func _ModuleLiasses()
 					_YDTool_SetDefaultPrinter($g_sDefaultPrinter)
 					_YDTool_SetTrayTip(_YDGVars_Get("sAppTitle"), "Retour sur imprimante : " & $g_sDefaultPrinterName, 5000)
 				EndIf
+			EndIf
+		EndIf
+	EndIf
+EndFunc
+
+; #FUNCTION# ====================================================================================================================
+; Description ...: Traitement des impressions pour les injecteurs
+; Syntax ........: _ModuleInjecteurs()
+; Parameters ....:
+; Return values .:
+; Author ........: yann.daniel@assurance-maladie.fr
+; Last Modified .: 02/01/2020
+; Notes .........:
+;================================================================================================================================
+Func _ModuleInjecteurs()
+	Local $sFuncName = "_ModuleInjecteurs"
+	;Local $i
+	Local $sTestsPath
+	; On verifie le contexte
+	_CheckContext()
+	; On ne travaille que si PROGRES est lance
+	If ProcessExists($g_sProgresExeFileName) Then
+		; On verifie si l'impression d'un état a démarré
+		If _IsPrintStartFromEtatRelanceDatFile() Then
+			_YDLogger_Log("Impression état RELANCE démarrée !!!!", $sFuncName)
+			$sTestsPath = "C:\APPLILOC\DIP\tests\" & @YEAR & @MON & @MDAY & "-" & @HOUR & @MIN & @SEC & "-" & @MSEC & "_RELANCE.DAT"
+			_YDTool_CopyFile($g_sProgresInjecteursEtatRelanceDatFilePath, $sTestsPath)
+		EndIf
+		If _IsPrintStartFromEtatRejetDatFile() Then
+			_YDLogger_Log("Impression état REJET démarrée !!!!", $sFuncName)
+			$sTestsPath = "C:\APPLILOC\DIP\tests\" & @YEAR & @MON & @MDAY & "-" & @HOUR & @MIN & @SEC & "-" & @MSEC & "_REJET.DAT"
+			_YDTool_CopyFile($g_sProgresInjecteursEtatRejetDatFilePath, $sTestsPath)
+		EndIf
+		If _IsPrintStartFromEtatOkDatFile() Then
+			_YDLogger_Log("Impression état OK démarrée !!!!", $sFuncName)
+			$sTestsPath = "C:\APPLILOC\DIP\tests\" & @YEAR & @MON & @MDAY & "-" & @HOUR & @MIN & @SEC & "-" & @MSEC & "_OK.DAT"
+			_YDTool_CopyFile($g_sProgresInjecteursEtatOkDatFilePath, $sTestsPath)
+		EndIf
+		If _IsPrintStartFromEtatAvDatFile() Then
+			_YDLogger_Log("Impression état AV démarrée !!!!", $sFuncName)
+			$sTestsPath = "C:\APPLILOC\DIP\tests\" & @YEAR & @MON & @MDAY & "-" & @HOUR & @MIN & @SEC & "-" & @MSEC & "_AV.DAT"
+			_YDTool_CopyFile($g_sProgresInjecteursEtatAvDatFilePath, $sTestsPath)
+		EndIf
+		If ($g_bProgresInjecteursEtatRelanceDatFileChanged Or $g_bProgresInjecteursEtatRejetDatFileChanged Or $g_bProgresInjecteursEtatOkDatFileChanged Or $g_bProgresInjecteursEtatAvDatFileChanged) Then
+			; On suspend PROGRES
+			_YDTool_SuspendProcessSwitch($g_sProgresExeFileName, True)
+			Sleep(1000)
+			$sTestsPath = "C:\APPLILOC\DIP\tests\" & @YEAR & @MON & @MDAY & "-" & @HOUR & @MIN & @SEC & "-" & @MSEC
+			_YDTool_CopyFile($g_sProgresInjecteursEtatRelanceDatFilePath, $sTestsPath & "_RELANCE.DAT")
+			_YDTool_CopyFile($g_sProgresInjecteursEtatRejetDatFilePath, $sTestsPath & "_REJET.DAT")
+			_YDTool_CopyFile($g_sProgresInjecteursEtatOkDatFilePath, $sTestsPath & "_OK.DAT")
+			_YDTool_CopyFile($g_sProgresInjecteursEtatAvDatFilePath, $sTestsPath & "_AV.DAT")
+			; On suspend PROGRES
+			_YDTool_SuspendProcessSwitch($g_sProgresExeFileName, True)
+			Sleep(1000)
+			$sTestsPath = "C:\APPLILOC\DIP\tests\" & @YEAR & @MON & @MDAY & "-" & @HOUR & @MIN & @SEC & "-" & @MSEC
+			_YDTool_CopyFile($g_sProgresInjecteursEtatRelanceDatFilePath, $sTestsPath & "_RELANCE.DAT")
+			_YDTool_CopyFile($g_sProgresInjecteursEtatRejetDatFilePath, $sTestsPath & "_REJET.DAT")
+			_YDTool_CopyFile($g_sProgresInjecteursEtatOkDatFilePath, $sTestsPath & "_OK.DAT")
+			_YDTool_CopyFile($g_sProgresInjecteursEtatAvDatFilePath, $sTestsPath & "_AV.DAT")
+			; On verifie si l'impression est terminee
+			If _IsPrintStopFromInjLogFile() Then
+				_YDLogger_Log("Impression terminée !", $sFuncName)
+				_YDTool_SuspendProcessSwitch($g_sProgresExeFileName, True)
+				; On retourne sur l'imprimante par defaut
+				;_YDTool_SetDefaultPrinter($g_sDefaultPrinter)
+				;_YDTool_SetTrayTip(_YDGVars_Get("sAppTitle"), "Retour sur imprimante : " & $g_sDefaultPrinterName, 5000)
 			EndIf
 		EndIf
 	EndIf
@@ -345,30 +452,138 @@ Func _ModuleOuvertures()
 EndFunc
 
 ; #FUNCTION# ====================================================================================================================
-; Description ...: permet de verifier si le debut de l'impression a été demandé via le DAT du NSREPORT
-; Syntax ........: _IsPrintStartFromNsReportDatFile()
+; Description ...: Permet de verifier si le debut de l'impression de liasse a été demandé via le DAT du NSREPORT
+; Syntax ........: _IsPrintStartFromMcoDatFile()
 ; Parameters ....:
 ; Return values .: True / False
 ; Author ........: yann.daniel@assurance-maladie.fr
-; Last Modified .: 04/12/2019
+; Last Modified .: 02/01/2020
 ; Notes .........:
 ;================================================================================================================================
-Func _IsPrintStartFromNsReportDatFile()
-	Local $sFuncName = "_IsPrintStartFromNsReportDatFile"
-	Local $sFileDateTime = _ArrayToString(FileGetTime($g_sProgresLiassesNsReportDatFilePath))
-	$g_sProgresLiassesNsReportDatFileChanged = False
+Func _IsPrintStartFromMcoDatFile()
+	Local $sFuncName = "_IsPrintStartFromMcoDatFile"
+	Local $sFileDateTime = _ArrayToString(FileGetTime($g_sProgresLiassesMcoDatFilePath))
+	$g_bProgresLiassesMcoDatFileChanged = False
 	_YDLogger_Var("$sFileDateTime", $sFileDateTime, $sFuncName, 2)
-	If $sFileDateTime <> $g_sProgresLiassesNsReportDatFileDateTime Then
-		$g_sProgresLiassesNsReportDatFileDateTime = $sFileDateTime
-		$g_sProgresLiassesNsReportDatFileChanged = True
+	If $sFileDateTime <> $g_sProgresLiassesMcoDatFileDateTime Then
+		$g_sProgresLiassesMcoDatFileDateTime = $sFileDateTime
+		$g_bProgresLiassesMcoDatFileChanged = True
 	Endif
-	_YDLogger_Var("$g_sProgresLiassesNsReportDatFileDateTime", $g_sProgresLiassesNsReportDatFileDateTime, $sFuncName, 2)
-	_YDLogger_Var("$g_sProgresLiassesNsReportDatFileChanged", $g_sProgresLiassesNsReportDatFileChanged, $sFuncName, 2)
-	Return $g_sProgresLiassesNsReportDatFileChanged
+	_YDLogger_Var("$g_sProgresLiassesMcoDatFileDateTime", $g_sProgresLiassesMcoDatFileDateTime, $sFuncName, 2)
+	_YDLogger_Var("$g_bProgresLiassesMcoDatFileChanged", $g_bProgresLiassesMcoDatFileChanged, $sFuncName, 2)
+	Return $g_bProgresLiassesMcoDatFileChanged
 EndFunc
 
 ; #FUNCTION# ====================================================================================================================
-; Description ...: permet de verifier si la fin de l'impression a été détectée dans le fichier TECH_xxxxxxx.LOG
+; Description ...: Permet de verifier si le debut de l'impression d'un état RELANCE a été demandé via le DAT du NSREPORT
+; Syntax ........: _IsPrintStartFromEtatRelanceDatFile()
+; Parameters ....:
+; Return values .: True / False
+; Author ........: yann.daniel@assurance-maladie.fr
+; Last Modified .: 02/01/2020
+; Notes .........:
+;================================================================================================================================
+Func _IsPrintStartFromEtatRelanceDatFile()
+	Local $sFuncName = "_IsPrintStartFromEtatRelanceDatFile"
+	If FileExists($g_sProgresInjecteursEtatRelanceDatFilePath) Then
+		Local $sFileDateTime = _ArrayToString(FileGetTime($g_sProgresInjecteursEtatRelanceDatFilePath))
+		$g_bProgresInjecteursEtatRelanceDatFileChanged = False
+		_YDLogger_Var("$sFileDateTime", $sFileDateTime, $sFuncName, 2)
+		If $sFileDateTime <> $g_sProgresInjecteursEtatRelanceDatFileDateTime Then
+			$g_sProgresInjecteursEtatRelanceDatFileDateTime = $sFileDateTime
+			$g_bProgresInjecteursEtatRelanceDatFileChanged = True
+		Endif
+	Else
+		$g_bProgresInjecteursEtatRelanceDatFileChanged = False
+	EndIf
+	_YDLogger_Var("$g_sProgresInjecteursEtatRelanceDatFileDateTime", $g_sProgresInjecteursEtatRelanceDatFileDateTime, $sFuncName, 2)
+	_YDLogger_Var("$g_bProgresInjecteursEtatRelanceDatFileChanged", $g_bProgresInjecteursEtatRelanceDatFileChanged, $sFuncName, 2)
+	Return $g_bProgresInjecteursEtatRelanceDatFileChanged
+EndFunc
+
+; #FUNCTION# ====================================================================================================================
+; Description ...: Permet de verifier si le debut de l'impression d'un état REJET a été demandé via le DAT du NSREPORT
+; Syntax ........: _IsPrintStartFromEtatRejetDatFile()
+; Parameters ....:
+; Return values .: True / False
+; Author ........: yann.daniel@assurance-maladie.fr
+; Last Modified .: 02/01/2020
+; Notes .........:
+;================================================================================================================================
+Func _IsPrintStartFromEtatRejetDatFile()
+	Local $sFuncName = "_IsPrintStartFromEtatRejetDatFile"
+	If FileExists($g_sProgresInjecteursEtatRejetDatFilePath) Then
+		Local $sFileDateTime = _ArrayToString(FileGetTime($g_sProgresInjecteursEtatRejetDatFilePath))
+		$g_bProgresInjecteursEtatRejetDatFileChanged = False
+		_YDLogger_Var("$sFileDateTime", $sFileDateTime, $sFuncName, 2)
+		If $sFileDateTime <> $g_sProgresInjecteursEtatRejetDatFileDateTime Then
+			$g_sProgresInjecteursEtatRejetDatFileDateTime = $sFileDateTime
+			$g_bProgresInjecteursEtatRejetDatFileChanged = True
+		Endif
+	Else
+		$g_bProgresInjecteursEtatRejetDatFileChanged = False
+	EndIf
+	_YDLogger_Var("$g_sProgresInjecteursEtatRejetDatFileDateTime", $g_sProgresInjecteursEtatRejetDatFileDateTime, $sFuncName, 2)
+	_YDLogger_Var("$g_bProgresInjecteursEtatRejetDatFileChanged", $g_bProgresInjecteursEtatRejetDatFileChanged, $sFuncName, 2)
+	Return $g_bProgresInjecteursEtatRejetDatFileChanged
+EndFunc
+
+; #FUNCTION# ====================================================================================================================
+; Description ...: Permet de verifier si le debut de l'impression d'un état OK a été demandé via le DAT du NSREPORT
+; Syntax ........: _IsPrintStartFromEtatOkDatFile()
+; Parameters ....:
+; Return values .: True / False
+; Author ........: yann.daniel@assurance-maladie.fr
+; Last Modified .: 02/01/2020
+; Notes .........:
+;================================================================================================================================
+Func _IsPrintStartFromEtatOkDatFile()
+	Local $sFuncName = "_IsPrintStartFromEtatOkDatFile"
+	If FileExists($g_sProgresInjecteursEtatOkDatFilePath) Then
+		Local $sFileDateTime = _ArrayToString(FileGetTime($g_sProgresInjecteursEtatOkDatFilePath))
+		$g_bProgresInjecteursEtatOkDatFileChanged = False
+		_YDLogger_Var("$sFileDateTime", $sFileDateTime, $sFuncName, 2)
+		If $sFileDateTime <> $g_sProgresInjecteursEtatOkDatFileDateTime Then
+			$g_sProgresInjecteursEtatOkDatFileDateTime = $sFileDateTime
+			$g_bProgresInjecteursEtatOkDatFileChanged = True
+		Endif
+	Else
+		$g_bProgresInjecteursEtatOkDatFileChanged = False
+	EndIf
+	_YDLogger_Var("$g_sProgresInjecteursEtatOkDatFileDateTime", $g_sProgresInjecteursEtatOkDatFileDateTime, $sFuncName, 2)
+	_YDLogger_Var("$g_bProgresInjecteursEtatOkDatFileChanged", $g_bProgresInjecteursEtatOkDatFileChanged, $sFuncName, 2)
+	Return $g_bProgresInjecteursEtatOkDatFileChanged
+EndFunc
+
+; #FUNCTION# ====================================================================================================================
+; Description ...: Permet de verifier si le debut de l'impression d'un état AV a été demandé via le DAT du NSREPORT
+; Syntax ........: _IsPrintStartFromEtatAvDatFile()
+; Parameters ....:
+; Return values .: True / False
+; Author ........: yann.daniel@assurance-maladie.fr
+; Last Modified .: 02/01/2020
+; Notes .........:
+;================================================================================================================================
+Func _IsPrintStartFromEtatAvDatFile()
+	Local $sFuncName = "_IsPrintStartFromEtatAvDatFile"
+	If FileExists($g_sProgresInjecteursEtatAvDatFilePath) Then
+		Local $sFileDateTime = _ArrayToString(FileGetTime($g_sProgresInjecteursEtatAvDatFilePath))
+		$g_bProgresInjecteursEtatAvDatFileChanged = False
+		_YDLogger_Var("$sFileDateTime", $sFileDateTime, $sFuncName, 2)
+		If $sFileDateTime <> $g_sProgresInjecteursEtatAvDatFileDateTime Then
+			$g_sProgresInjecteursEtatAvDatFileDateTime = $sFileDateTime
+			$g_bProgresInjecteursEtatAvDatFileChanged = True
+		Endif
+	Else
+		$g_bProgresInjecteursEtatAvDatFileChanged = False
+	EndIf
+	_YDLogger_Var("$g_sProgresInjecteursEtatAvDatFileDateTime", $g_sProgresInjecteursEtatAvDatFileDateTime, $sFuncName, 2)
+	_YDLogger_Var("$g_bProgresInjecteursEtatAvDatFileChanged", $g_bProgresInjecteursEtatAvDatFileChanged, $sFuncName, 2)
+	Return $g_bProgresInjecteursEtatAvDatFileChanged
+EndFunc
+
+; #FUNCTION# ====================================================================================================================
+; Description ...: Permet de verifier si la fin de l'impression a été détectée dans le fichier TECH_xxxxxxx.LOG
 ; Syntax ........: _IsPrintStopFromTechLogFile()
 ; Parameters ....:
 ; Return values .: True / False
@@ -418,7 +633,57 @@ Func _IsPrintStopFromTechLogFile()
 EndFunc
 
 ; #FUNCTION# ====================================================================================================================
-; Description ...: permet de récupérer l'UGE via le fichier TECH_xxxxxxx.LOG
+; Description ...: Permet de verifier si la fin de l'impression a été détectée dans le fichier INJ_xxxxxxx.LOG
+; Syntax ........: _IsPrintStopFromInjLogFile()
+; Parameters ....:
+; Return values .: True / False
+; Author ........: yann.daniel@assurance-maladie.fr
+; Last Modified .: 02/01/2020
+; Notes .........:
+;================================================================================================================================
+Func _IsPrintStopFromInjLogFile()
+	Local $sFuncName = "_IsPrintStopFromInjLogFile"
+	Local $sFileLine
+	Local $hLogFile
+	Local $sPattern = "Fin du traitement du deblocage detail"
+	Local $iPrintStopDetected = 0
+	Local $bPrintStop = False
+	;------------------------------
+	$hLogFile = FileOpen($g_sProgresInjLogFilePath, 0)
+	If $hLogFile = -1 Then
+		_YDLogger_Error("Fichier impossible a ouvrir : " & $hLogFile, $sFuncName)
+		_YDTool_SetTrayTip(_YDGVars_Get("sAppTitle"), "Fichier de log inaccessible !", 0, $TIP_ICONASTERISK)
+		Return False
+	Endif
+	; On recupere le nombre de lignes du fichier de log
+	Local $iFileCountLine = _FileCountLines($g_sProgresInjLogFilePath)
+	_YDLogger_Var("$iFileCountLine", $iFileCountLine, $sFuncName, 2)
+	; Si le nb de ligne du fichier < compteur, on reinitialise le compteur a 1
+	If $iFileCountLine < $g_iLastLineInjLogFile Then $g_iLastLineInjLogFile = 1
+	_YDLogger_Var("$g_iLastLineInjLogFile (avant)", $g_iLastLineInjLogFile, $sFuncName, 2)
+	; On boucle sur le fichier log
+	For $i = $iFileCountLine to $g_iLastLineInjLogFile Step -1
+		If $iFileCountLine = $g_iLastLineInjLogFile Then ExitLoop
+		$sFileLine = FileReadLine($hLogFile, $i)
+		$iPrintStopDetected = StringInStr($sFileLine, $sPattern, 0, 1, 1)
+		; Si pattern trouve on sort de la boucle
+		If $iPrintStopDetected > 0 Then
+			;------------------------------
+			_YDLogger_Log("Pattern trouve : " & $sPattern, $sFuncName, 2)
+			$bPrintStop = True
+			ExitLoop
+		EndIf
+	Next
+	FileClose($hLogFile)
+	;------------------------------
+	; On log les infos utiles
+	$g_iLastLineInjLogFile = $iFileCountLine
+	_YDLogger_Var("$g_iLastLineInjLogFile (apres)", $g_iLastLineInjLogFile, $sFuncName, 2)
+	Return $bPrintStop
+EndFunc
+
+; #FUNCTION# ====================================================================================================================
+; Description ...: Permet de récupérer l'UGE via le fichier TECH_xxxxxxx.LOG
 ; Syntax ........: _GetUGEFromTechLogFile()
 ; Parameters ....:
 ; Return values .:
@@ -471,7 +736,7 @@ Func _GetUGEFromTechLogFile()
 EndFunc
 
 ; #FUNCTION# ====================================================================================================================
-; Description ...: permet de récupérer l'UGE via le fichier NTIC_xxxxxxx.LOG
+; Description ...: Permet de récupérer l'UGE via le fichier NTIC_xxxxxxx.LOG
 ; Syntax ........: _GetUGEFromNticLogFile()
 ; Parameters ....:
 ; Return values .:
@@ -823,6 +1088,3 @@ Func _InstallPdfCreatorPrinter()
 		Return False
 	EndIf
 EndFunc
-
-
-
