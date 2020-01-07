@@ -10,8 +10,8 @@
 ; AutoIt3Wrapper
 #AutoIt3Wrapper_Res_ProductName=DIP
 #AutoIt3Wrapper_Res_Description=Dématérialisation des Impressions PROGRES
-#AutoIt3Wrapper_Res_ProductVersion=0.0.5
-#AutoIt3Wrapper_Res_FileVersion=0.0.5
+#AutoIt3Wrapper_Res_ProductVersion=0.0.6
+#AutoIt3Wrapper_Res_FileVersion=0.0.6
 #AutoIt3Wrapper_Res_CompanyName=CNAMTS/CPAM_ARTOIS/APPLINAT
 #AutoIt3Wrapper_Res_LegalCopyright=yann.daniel@assurance-maladie.fr
 #AutoIt3Wrapper_Res_Language=1036
@@ -280,8 +280,8 @@ Func _ModuleLiasses()
 				Local $sAutosaveFilename = $sDate & "-" & $sTime & "_" & $sCaisse & "_" & $sUGE & "_" & $sLiasse & "_" & $sAgent
 				; On modifie le registre pour modifier le Path et le nom du fichier
 				_YDLogger_Log("Modification du registre", $sFuncName, 1)
-				_YDLogger_Var("$sAutosaveFilename", $sAutosaveFilename, $sFuncName, 1)
 				_YDLogger_Var("$sAutosaveDirectory", $sAutosaveDirectory, $sFuncName, 1)
+				_YDLogger_Var("$sAutosaveFilename", $sAutosaveFilename, $sFuncName, 1)
 				RegWrite("HKEY_CURRENT_USER\Software\PDFCreator\Profiles\" & $g_sPdfCreatorPrinter & "\Program", "AutosaveDirectory", "REG_SZ", $sAutosaveDirectory)
 				RegWrite("HKEY_CURRENT_USER\Software\PDFCreator\Profiles\" & $g_sPdfCreatorPrinter & "\Program", "AutosaveFilename", "REG_SZ", $sAutosaveFilename)
 				RegWrite("HKEY_CURRENT_USER\Software\PDFCreator\Profiles\" & $g_sPdfCreatorPrinter & "\Program", "AutosaveStartStandardProgram", "REG_SZ", $g_sProgresLiassesAutoOpenOutPutFile)
@@ -304,7 +304,7 @@ Func _ModuleLiasses()
 				Sleep(1000)
 				; On verifie si l'impression est terminee
 				If _IsPrintStopFromTechLogFile() Then
-					_YDLogger_Log("Impression terminée !", $sFuncName)
+					_YDLogger_Log("Impression liasse terminée !", $sFuncName)
 					; On retourne sur l'imprimante par defaut
 					_YDTool_SetDefaultPrinter($g_sDefaultPrinter)
 					_YDTool_SetTrayTip(_YDGVars_Get("sAppTitle"), "Retour sur imprimante : " & $g_sDefaultPrinterName, 5000)
@@ -331,52 +331,92 @@ Func _ModuleInjecteurs()
 	_CheckContext()
 	; On ne travaille que si PROGRES est lance
 	If ProcessExists($g_sProgresExeFileName) Then
+		; ---------------------------
 		; On verifie si l'impression d'un état a démarré
 		If _IsPrintStartFromEtatRelanceDatFile() Then
 			_YDLogger_Log("Impression état RELANCE démarrée !!!!", $sFuncName)
-			$sTestsPath = "C:\APPLILOC\DIP\tests\" & @YEAR & @MON & @MDAY & "-" & @HOUR & @MIN & @SEC & "-" & @MSEC & "_01_RELANCE.DAT"
+			; On patiente tant que le fichier n'est pas libéré ou 5 secondes
+			For $i = 1 To 500
+				If FileOpen($g_sProgresInjecteursEtatRelanceDatFilePath) <> -1 Then ExitLoop
+				Sleep(10)
+			Next
+			; On copie le fichier
+			$sTestsPath = "C:\APPLILOC\DIP\tests\" & @YEAR & @MON & @MDAY & "-" & @HOUR & @MIN & @SEC & "-" & @MSEC & "_RELANCE.DAT"
 			_YDTool_CopyFile($g_sProgresInjecteursEtatRelanceDatFilePath, $sTestsPath)
 		EndIf
 		If _IsPrintStartFromEtatRejetDatFile() Then
 			_YDLogger_Log("Impression état REJET démarrée !!!!", $sFuncName)
-			$sTestsPath = "C:\APPLILOC\DIP\tests\" & @YEAR & @MON & @MDAY & "-" & @HOUR & @MIN & @SEC & "-" & @MSEC & "_01_REJET.DAT"
+			; On patiente tant que le fichier n'est pas libéré ou 5 secondes
+			For $i = 1 To 500
+				If FileOpen($g_sProgresInjecteursEtatRejetDatFilePath) <> -1 Then ExitLoop
+				Sleep(10)
+			Next
+			; On copie le fichier
+			$sTestsPath = "C:\APPLILOC\DIP\tests\" & @YEAR & @MON & @MDAY & "-" & @HOUR & @MIN & @SEC & "-" & @MSEC & "_REJET.DAT"
 			_YDTool_CopyFile($g_sProgresInjecteursEtatRejetDatFilePath, $sTestsPath)
 		EndIf
 		If _IsPrintStartFromEtatOkDatFile() Then
 			_YDLogger_Log("Impression état OK démarrée !!!!", $sFuncName)
-			$sTestsPath = "C:\APPLILOC\DIP\tests\" & @YEAR & @MON & @MDAY & "-" & @HOUR & @MIN & @SEC & "-" & @MSEC & "_01_OK.DAT"
+			; On patiente tant que le fichier n'est pas libéré ou 5 secondes
+			For $i = 1 To 500
+				If FileOpen($g_sProgresInjecteursEtatOkDatFilePath) <> -1 Then ExitLoop
+				Sleep(10)
+			Next
+			; On copie le fichier
+			$sTestsPath = "C:\APPLILOC\DIP\tests\" & @YEAR & @MON & @MDAY & "-" & @HOUR & @MIN & @SEC & "-" & @MSEC & "_OK.DAT"
 			_YDTool_CopyFile($g_sProgresInjecteursEtatOkDatFilePath, $sTestsPath)
 		EndIf
 		If _IsPrintStartFromEtatAvDatFile() Then
 			_YDLogger_Log("Impression état AV démarrée !!!!", $sFuncName)
-			$sTestsPath = "C:\APPLILOC\DIP\tests\" & @YEAR & @MON & @MDAY & "-" & @HOUR & @MIN & @SEC & "-" & @MSEC & "_01_AV.DAT"
+			; On patiente tant que le fichier n'est pas libéré ou 5 secondes
+			For $i = 1 To 500
+				If FileOpen($g_sProgresInjecteursEtatAvDatFilePath) <> -1 Then ExitLoop
+				Sleep(10)
+			Next
+			; On copie le fichier
+			$sTestsPath = "C:\APPLILOC\DIP\tests\" & @YEAR & @MON & @MDAY & "-" & @HOUR & @MIN & @SEC & "-" & @MSEC & "_AV.DAT"
 			_YDTool_CopyFile($g_sProgresInjecteursEtatAvDatFilePath, $sTestsPath)
 		EndIf
+		; ----------------------------
 		If ($g_bProgresInjecteursEtatRelanceDatFileChanged Or $g_bProgresInjecteursEtatRejetDatFileChanged Or $g_bProgresInjecteursEtatOkDatFileChanged Or $g_bProgresInjecteursEtatAvDatFileChanged) Then
 			; On suspend PROGRES
 			_YDTool_SuspendProcessSwitch($g_sProgresExeFileName, True)
 			Sleep(1000)
-			$sTestsPath = "C:\APPLILOC\DIP\tests\" & @YEAR & @MON & @MDAY & "-" & @HOUR & @MIN & @SEC & "-" & @MSEC
-			_YDTool_CopyFile($g_sProgresInjecteursEtatRelanceDatFilePath, $sTestsPath & "_02_RELANCE.DAT")
-			_YDTool_CopyFile($g_sProgresInjecteursEtatRejetDatFilePath, $sTestsPath & "_02_REJET.DAT")
-			_YDTool_CopyFile($g_sProgresInjecteursEtatOkDatFilePath, $sTestsPath & "_02_OK.DAT")
-			_YDTool_CopyFile($g_sProgresInjecteursEtatAvDatFilePath, $sTestsPath & "_02_AV.DAT")
+			; On détermine le site et le nom du fichier
+			$g_sSiteNetworkPath = ($g_sSite = "ARRAS") ? $g_sProgresLiassesArrasPath : $g_sProgresLiassesLensPath
+			_YDLogger_Var("$g_sSiteNetworkPath", $g_sSiteNetworkPath)
+			Local $sAutosaveDirectory = $g_sSiteNetworkPath & "\" & @YEAR & @MON & @MDAY & "\"
+			Local $sAutosaveFilename = @YEAR & @MON & @MDAY & "-" & @HOUR & @MIN & @SEC & "_etat"
+			; On modifie le registre pour modifier le Path et le nom du fichier
+			_YDLogger_Log("Modification du registre", $sFuncName, 1)
+			_YDLogger_Var("$sAutosaveDirectory", $sAutosaveDirectory, $sFuncName, 1)
+			_YDLogger_Var("$sAutosaveFilename", $sAutosaveFilename, $sFuncName, 1)
+			RegWrite("HKEY_CURRENT_USER\Software\PDFCreator\Profiles\" & $g_sPdfCreatorPrinter & "\Program", "AutosaveDirectory", "REG_SZ", $sAutosaveDirectory)
+			RegWrite("HKEY_CURRENT_USER\Software\PDFCreator\Profiles\" & $g_sPdfCreatorPrinter & "\Program", "AutosaveFilename", "REG_SZ", $sAutosaveFilename)
+			RegWrite("HKEY_CURRENT_USER\Software\PDFCreator\Profiles\" & $g_sPdfCreatorPrinter & "\Program", "AutosaveStartStandardProgram", "REG_SZ", $g_sProgresInjecteursAutoOpenOutPutFile)
+			; On bascule sur PDFCreator
+			$i = 0
+			_YDTool_SetDefaultPrinter($g_sPdfCreatorPrinter)
+			While _YDTool_GetDefaultPrinter(@ComputerName) <> $g_sPdfCreatorPrinter
+				$i += 1
+				Sleep(100)
+				_YDTool_SetDefaultPrinter($g_sPdfCreatorPrinter)
+				If $i > 20 Then
+					_YDTool_SetTrayTip(_YDGVars_Get("sAppTitle"), "Bascule impossible vers imprimante : " & $g_sPdfCreatorPrinter, 5000)
+					Return False
+				EndIf
+			WEnd
+			_YDTool_SetTrayTip(_YDGVars_Get("sAppTitle"), "Bascule vers imprimante : " & $g_sPdfCreatorPrinter, 5000)
 			; On reactive PROGRES
 			_YDTool_SuspendProcessSwitch($g_sProgresExeFileName, False)
+			; L'impression se lance ...
 			Sleep(1000)
-			$sTestsPath = "C:\APPLILOC\DIP\tests\" & @YEAR & @MON & @MDAY & "-" & @HOUR & @MIN & @SEC & "-" & @MSEC
-			_YDTool_CopyFile($g_sProgresInjecteursEtatRelanceDatFilePath, $sTestsPath & "_03_RELANCE.DAT")
-			_YDTool_CopyFile($g_sProgresInjecteursEtatRejetDatFilePath, $sTestsPath & "_03_REJET.DAT")
-			_YDTool_CopyFile($g_sProgresInjecteursEtatOkDatFilePath, $sTestsPath & "_03_OK.DAT")
-			_YDTool_CopyFile($g_sProgresInjecteursEtatAvDatFilePath, $sTestsPath & "_03_AV.DAT")
 			; On verifie si l'impression est terminee
 			If _IsPrintStopFromInjLogFile() Then
-				_YDLogger_Log("Impression terminée !", $sFuncName)
-				; On reactive PROGRES
-				_YDTool_SuspendProcessSwitch($g_sProgresExeFileName, False)
+				_YDLogger_Log("Impression injecteur terminée !", $sFuncName)
 				; On retourne sur l'imprimante par defaut
-				;_YDTool_SetDefaultPrinter($g_sDefaultPrinter)
-				;_YDTool_SetTrayTip(_YDGVars_Get("sAppTitle"), "Retour sur imprimante : " & $g_sDefaultPrinterName, 5000)
+				_YDTool_SetDefaultPrinter($g_sDefaultPrinter)
+				_YDTool_SetTrayTip(_YDGVars_Get("sAppTitle"), "Retour sur imprimante : " & $g_sDefaultPrinterName, 5000)
 			EndIf
 		EndIf
 	EndIf
@@ -490,7 +530,7 @@ Func _IsPrintStartFromEtatRelanceDatFile()
 		Local $sFileDateTime = _ArrayToString(FileGetTime($g_sProgresInjecteursEtatRelanceDatFilePath))
 		$g_bProgresInjecteursEtatRelanceDatFileChanged = False
 		_YDLogger_Var("$sFileDateTime", $sFileDateTime, $sFuncName, 2)
-		If $sFileDateTime <> $g_sProgresInjecteursEtatRelanceDatFileDateTime Then
+		If $sFileDateTime <> $g_sProgresInjecteursEtatRelanceDatFileDateTime And FileGetSize($g_sProgresInjecteursEtatRelanceDatFilePath) > 0 Then
 			$g_sProgresInjecteursEtatRelanceDatFileDateTime = $sFileDateTime
 			$g_bProgresInjecteursEtatRelanceDatFileChanged = True
 		Endif
@@ -517,7 +557,7 @@ Func _IsPrintStartFromEtatRejetDatFile()
 		Local $sFileDateTime = _ArrayToString(FileGetTime($g_sProgresInjecteursEtatRejetDatFilePath))
 		$g_bProgresInjecteursEtatRejetDatFileChanged = False
 		_YDLogger_Var("$sFileDateTime", $sFileDateTime, $sFuncName, 2)
-		If $sFileDateTime <> $g_sProgresInjecteursEtatRejetDatFileDateTime Then
+		If $sFileDateTime <> $g_sProgresInjecteursEtatRejetDatFileDateTime And FileGetSize($g_sProgresInjecteursEtatRejetDatFilePath) > 0 Then
 			$g_sProgresInjecteursEtatRejetDatFileDateTime = $sFileDateTime
 			$g_bProgresInjecteursEtatRejetDatFileChanged = True
 		Endif
@@ -544,7 +584,7 @@ Func _IsPrintStartFromEtatOkDatFile()
 		Local $sFileDateTime = _ArrayToString(FileGetTime($g_sProgresInjecteursEtatOkDatFilePath))
 		$g_bProgresInjecteursEtatOkDatFileChanged = False
 		_YDLogger_Var("$sFileDateTime", $sFileDateTime, $sFuncName, 2)
-		If $sFileDateTime <> $g_sProgresInjecteursEtatOkDatFileDateTime Then
+		If $sFileDateTime <> $g_sProgresInjecteursEtatOkDatFileDateTime And FileGetSize($g_sProgresInjecteursEtatOkDatFilePath) > 0 Then
 			$g_sProgresInjecteursEtatOkDatFileDateTime = $sFileDateTime
 			$g_bProgresInjecteursEtatOkDatFileChanged = True
 		Endif
@@ -571,7 +611,7 @@ Func _IsPrintStartFromEtatAvDatFile()
 		Local $sFileDateTime = _ArrayToString(FileGetTime($g_sProgresInjecteursEtatAvDatFilePath))
 		$g_bProgresInjecteursEtatAvDatFileChanged = False
 		_YDLogger_Var("$sFileDateTime", $sFileDateTime, $sFuncName, 2)
-		If $sFileDateTime <> $g_sProgresInjecteursEtatAvDatFileDateTime Then
+		If $sFileDateTime <> $g_sProgresInjecteursEtatAvDatFileDateTime And FileGetSize($g_sProgresInjecteursEtatAvDatFilePath) > 0 Then
 			$g_sProgresInjecteursEtatAvDatFileDateTime = $sFileDateTime
 			$g_bProgresInjecteursEtatAvDatFileChanged = True
 		Endif
