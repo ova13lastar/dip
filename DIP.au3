@@ -10,8 +10,8 @@
 ; AutoIt3Wrapper
 #AutoIt3Wrapper_Res_ProductName=DIP
 #AutoIt3Wrapper_Res_Description=Dematerialisation des Impressions PROGRES
-#AutoIt3Wrapper_Res_ProductVersion=0.0.7
-#AutoIt3Wrapper_Res_FileVersion=0.0.7
+#AutoIt3Wrapper_Res_ProductVersion=0.0.8
+#AutoIt3Wrapper_Res_FileVersion=0.0.8
 #AutoIt3Wrapper_Res_CompanyName=CNAMTS/CPAM_ARTOIS/APPLINAT
 #AutoIt3Wrapper_Res_LegalCopyright=yann.daniel@assurance-maladie.fr
 #AutoIt3Wrapper_Res_Language=1036
@@ -242,9 +242,11 @@ Func _ModuleLiasses()
 			If _FileReadToArray($g_sProgresLiassesMcoDatFilePath, $aMcoDat) = 0 Then
 				_YDLogger_Error("Impossible de lire le fichier", $sFuncName)
 				_YDTool_SuspendProcessSwitch($g_sProgresExeFileName, False)
-				Return False
+				Return
 			EndIf
 			; Si OK, on recupere les donnees
+			Local $bEcheancierAuto = False
+			Local $bLiasseVide = True
 			For $i = 0 To $aMcoDat[0]
 				Local $aMcoDatVar = StringSplit($aMcoDat[$i], "=")
 				_YDLogger_Log($aMcoDat[$i], $sFuncName, 1)
@@ -258,58 +260,68 @@ Func _ModuleLiasses()
 					Case "AGENT"
 						Local $sAgent = $aMcoDatVar[2]
 					Case "ACTION"
-						Local $bEcheancierAuto = False
+						$bLiasseVide = False
 						If $aMcoDatVar[2] == "Trait. ech auto" Then
 							$bEcheancierAuto = True
 						EndIf
 				EndSwitch
 			Next
-			_YDLogger_Var("$bEcheancierAuto", $bEcheancierAuto)
+			_YDLogger_Sep()
+			; ---------
+			If $bLiasseVide Then
+				_YDLogger_Log("Liasse vide : pas de bascule", $sFuncName, 1)
+				; On reactive PROGRES
+				_YDTool_SuspendProcessSwitch($g_sProgresExeFileName, False)
+				Return
+			EndIf
+			; ---------
 			If $bEcheancierAuto Then
 				_YDLogger_Log("Echeancier auto : pas de bascule", $sFuncName, 1)
 				; On reactive PROGRES
 				_YDTool_SuspendProcessSwitch($g_sProgresExeFileName, False)
-			Else
-				_YDLogger_Log("Traitement classique : on doit basculer ...", $sFuncName, 1)
-				Local $sMcoDatFileDateTime = FileGetTime($g_sProgresLiassesMcoDatFilePath)
-				Local $sDate = $sMcoDatFileDateTime[0] & $sMcoDatFileDateTime[1] & $sMcoDatFileDateTime[2]
-				Local $sTime = $sMcoDatFileDateTime[3] & $sMcoDatFileDateTime[4] & $sMcoDatFileDateTime[5]
-				$g_sSiteNetworkPath = ($g_sSite = "ARRAS") ? $g_sProgresLiassesArrasPath : $g_sProgresLiassesLensPath
-				_YDLogger_Var("$g_sSiteNetworkPath", $g_sSiteNetworkPath)
-				Local $sAutosaveDirectory = $g_sSiteNetworkPath & "\" & $sDate & "\"
-				Local $sAutosaveFilename = $sDate & "-" & $sTime & "_" & $sCaisse & "_" & $sUGE & "_" & $sLiasse & "_" & $sAgent
-				; On modifie le registre pour modifier le Path et le nom du fichier
-				_YDLogger_Log("Modification du registre", $sFuncName, 1)
-				_YDLogger_Var("$sAutosaveDirectory", $sAutosaveDirectory, $sFuncName, 1)
-				_YDLogger_Var("$sAutosaveFilename", $sAutosaveFilename, $sFuncName, 1)
-				RegWrite("HKEY_CURRENT_USER\Software\PDFCreator\Profiles\" & $g_sPdfCreatorPrinter & "\Program", "AutosaveDirectory", "REG_SZ", $sAutosaveDirectory)
-				RegWrite("HKEY_CURRENT_USER\Software\PDFCreator\Profiles\" & $g_sPdfCreatorPrinter & "\Program", "AutosaveFilename", "REG_SZ", $sAutosaveFilename)
-				RegWrite("HKEY_CURRENT_USER\Software\PDFCreator\Profiles\" & $g_sPdfCreatorPrinter & "\Program", "AutosaveStartStandardProgram", "REG_SZ", $g_sProgresLiassesAutoOpenOutPutFile)
-				; On bascule sur PDFCreator
-				$i = 0
+				Return
+			EndIf
+			; ---------
+			_YDLogger_Log("Traitement liasse classique : on doit basculer ...", $sFuncName, 1)
+			Local $sMcoDatFileDateTime = FileGetTime($g_sProgresLiassesMcoDatFilePath)
+			Local $sDate = $sMcoDatFileDateTime[0] & $sMcoDatFileDateTime[1] & $sMcoDatFileDateTime[2]
+			Local $sTime = $sMcoDatFileDateTime[3] & $sMcoDatFileDateTime[4] & $sMcoDatFileDateTime[5]
+			$g_sSiteNetworkPath = ($g_sSite = "ARRAS") ? $g_sProgresLiassesArrasPath : $g_sProgresLiassesLensPath
+			_YDLogger_Var("$g_sSiteNetworkPath", $g_sSiteNetworkPath)
+			Local $sAutosaveDirectory = $g_sSiteNetworkPath & "\" & $sDate & "\"
+			Local $sAutosaveFilename = $sDate & "-" & $sTime & "_" & $sCaisse & "_" & $sUGE & "_" & $sLiasse & "_" & $sAgent
+			; On modifie le registre pour modifier le Path et le nom du fichier
+			_YDLogger_Log("Modification du registre", $sFuncName, 1)
+			_YDLogger_Var("$sAutosaveDirectory", $sAutosaveDirectory, $sFuncName, 1)
+			_YDLogger_Var("$sAutosaveFilename", $sAutosaveFilename, $sFuncName, 1)
+			RegWrite("HKEY_CURRENT_USER\Software\PDFCreator\Profiles\" & $g_sPdfCreatorPrinter & "\Program", "AutosaveDirectory", "REG_SZ", $sAutosaveDirectory)
+			RegWrite("HKEY_CURRENT_USER\Software\PDFCreator\Profiles\" & $g_sPdfCreatorPrinter & "\Program", "AutosaveFilename", "REG_SZ", $sAutosaveFilename)
+			RegWrite("HKEY_CURRENT_USER\Software\PDFCreator\Profiles\" & $g_sPdfCreatorPrinter & "\Program", "AutosaveStartStandardProgram", "REG_SZ", $g_sProgresLiassesAutoOpenOutPutFile)
+			; On bascule sur PDFCreator
+			$i = 0
+			_YDTool_SetDefaultPrinter($g_sPdfCreatorPrinter)
+			While _YDTool_GetDefaultPrinter(@ComputerName) <> $g_sPdfCreatorPrinter
+				$i += 1
+				Sleep(100)
 				_YDTool_SetDefaultPrinter($g_sPdfCreatorPrinter)
-				While _YDTool_GetDefaultPrinter(@ComputerName) <> $g_sPdfCreatorPrinter
-					$i += 1
-					Sleep(100)
-					_YDTool_SetDefaultPrinter($g_sPdfCreatorPrinter)
-					If $i > 20 Then
-						_YDTool_SetTrayTip(_YDGVars_Get("sAppTitle"), "Bascule impossible vers imprimante : " & $g_sPdfCreatorPrinter, 5000)
-						_YDTool_SuspendProcessSwitch($g_sProgresExeFileName, False)
-						Return False
-					EndIf
-				WEnd
-				_YDTool_SetTrayTip(_YDGVars_Get("sAppTitle"), "Bascule vers imprimante : " & $g_sPdfCreatorPrinter, 5000)
-				; On reactive PROGRES
-				_YDTool_SuspendProcessSwitch($g_sProgresExeFileName, False)
-				; L'impression se lance ...
-				Sleep(1000)
-				; On verifie si l'impression est terminee
-				If _IsPrintStopFromTechLogFile() Then
-					_YDLogger_Log("Impression liasse terminee !", $sFuncName)
-					; On retourne sur l'imprimante par defaut
-					_YDTool_SetDefaultPrinter($g_sDefaultPrinter)
-					_YDTool_SetTrayTip(_YDGVars_Get("sAppTitle"), "Retour sur imprimante : " & $g_sDefaultPrinterName, 5000)
+				If $i > 20 Then
+					_YDTool_SetTrayTip(_YDGVars_Get("sAppTitle"), "Bascule impossible vers imprimante : " & $g_sPdfCreatorPrinter, 5000)
+					; On reactive PROGRES
+					_YDTool_SuspendProcessSwitch($g_sProgresExeFileName, False)
+					Return
 				EndIf
+			WEnd
+			_YDTool_SetTrayTip(_YDGVars_Get("sAppTitle"), "Bascule vers imprimante : " & $g_sPdfCreatorPrinter, 5000)
+			; On reactive PROGRES
+			_YDTool_SuspendProcessSwitch($g_sProgresExeFileName, False)
+			; L'impression se lance ...
+			Sleep(1000)
+			; On verifie si l'impression est terminee
+			If _IsPrintStopFromTechLogFile() Then
+				_YDLogger_Log("Impression liasse terminee !", $sFuncName)
+				; On retourne sur l'imprimante par defaut
+				_YDTool_SetDefaultPrinter($g_sDefaultPrinter)
+				_YDTool_SetTrayTip(_YDGVars_Get("sAppTitle"), "Retour sur imprimante : " & $g_sDefaultPrinterName, 5000)
 			EndIf
 		EndIf
 	EndIf
@@ -328,6 +340,7 @@ Func _ModuleInjecteurs()
 	Local $sFuncName = "_ModuleInjecteurs"
 	Local $bProgresInjecteurEtatStarted = False
 	Local $sTestsPath
+	Local $hFile
 	; On verifie le contexte
 	_CheckContext()
 	; On ne travaille que si PROGRES est lance
@@ -339,7 +352,11 @@ Func _ModuleInjecteurs()
 			$bProgresInjecteurEtatStarted = True
 			; On patiente tant que le fichier n'est pas libere ou 5 secondes
 			For $i = 1 To 500
-				If FileOpen($g_sProgresInjecteursEtatRelanceDatFilePath) <> -1 Then ExitLoop
+				$hFile = FileOpen($g_sProgresInjecteursEtatRelanceDatFilePath)
+				If $hFile <> -1 Then
+					FileClose($hFile)
+					ExitLoop
+				EndIf
 				Sleep(10)
 			Next
 			; On copie le fichier
@@ -351,7 +368,11 @@ Func _ModuleInjecteurs()
 			$bProgresInjecteurEtatStarted = True
 			; On patiente tant que le fichier n'est pas libere ou 5 secondes
 			For $i = 1 To 500
-				If FileOpen($g_sProgresInjecteursEtatRejetDatFilePath) <> -1 Then ExitLoop
+				$hFile = FileOpen($g_sProgresInjecteursEtatRejetDatFilePath)
+				If $hFile <> -1 Then
+					FileClose($hFile)
+					ExitLoop
+				EndIf
 				Sleep(10)
 			Next
 			; On copie le fichier
@@ -363,7 +384,11 @@ Func _ModuleInjecteurs()
 			$bProgresInjecteurEtatStarted = True
 			; On patiente tant que le fichier n'est pas libere ou 5 secondes
 			For $i = 1 To 500
-				If FileOpen($g_sProgresInjecteursEtatOkDatFilePath) <> -1 Then ExitLoop
+				$hFile = FileOpen($g_sProgresInjecteursEtatOkDatFilePath)
+				If $hFile <> -1 Then
+					FileClose($hFile)
+					ExitLoop
+				EndIf
 				Sleep(10)
 			Next
 			; On copie le fichier
@@ -375,7 +400,11 @@ Func _ModuleInjecteurs()
 			$bProgresInjecteurEtatStarted = True
 			; On patiente tant que le fichier n'est pas libere ou 5 secondes
 			For $i = 1 To 500
-				If FileOpen($g_sProgresInjecteursEtatAvDatFilePath) <> -1 Then ExitLoop
+				$hFile = FileOpen($g_sProgresInjecteursEtatAvDatFilePath)
+				If $hFile <> -1 Then
+					FileClose($hFile)
+					ExitLoop
+				EndIf
 				Sleep(10)
 			Next
 			; On copie le fichier
@@ -409,23 +438,23 @@ Func _ModuleInjecteurs()
 				_YDTool_SetDefaultPrinter($g_sPdfCreatorPrinter)
 				If $i > 20 Then
 					_YDTool_SetTrayTip(_YDGVars_Get("sAppTitle"), "Bascule impossible vers imprimante : " & $g_sPdfCreatorPrinter, 5000)
+					; On reactive PROGRES
 					_YDTool_SuspendProcessSwitch($g_sProgresExeFileName, False)
-					Return False
+					Return
 				EndIf
 			WEnd
 			_YDTool_SetTrayTip(_YDGVars_Get("sAppTitle"), "Bascule vers imprimante : " & $g_sPdfCreatorPrinter, 5000)
 			; On reactive PROGRES
 			_YDTool_SuspendProcessSwitch($g_sProgresExeFileName, False)
-			_YDLogger_Log("Traitement injecteur : termine", $sFuncName)
 			; L'impression se lance ...
-			;~ Sleep(1000)
+			Sleep(1000)
 			; On verifie si l'impression est terminee
-			;~ If _IsPrintStopFromInjLogFile() Then
-			;~ 	_YDLogger_Log("Impression injecteur terminee !", $sFuncName)
-			;~ 	; On retourne sur l'imprimante par defaut
-			;~ 	_YDTool_SetDefaultPrinter($g_sDefaultPrinter)
-			;~ 	_YDTool_SetTrayTip(_YDGVars_Get("sAppTitle"), "Retour sur imprimante : " & $g_sDefaultPrinterName, 5000)
-			;~ EndIf
+			If _IsPrintStopFromInjLogFile() Then
+				_YDLogger_Log("Traitement injecteur : termine", $sFuncName)
+				; On retourne sur l'imprimante par defaut
+				_YDTool_SetDefaultPrinter($g_sDefaultPrinter)
+				_YDTool_SetTrayTip(_YDGVars_Get("sAppTitle"), "Retour sur imprimante : " & $g_sDefaultPrinterName, 5000)
+			EndIf
 		EndIf
 	EndIf
 EndFunc
@@ -468,7 +497,7 @@ Func _ModuleOuvertures()
 			_YDTool_SetDefaultPrinter($g_sPdfCreatorPrinter)
 			If $i > 20 Then
 				_YDTool_SetTrayTip(_YDGVars_Get("sAppTitle"), "Bascule impossible vers imprimante : " & $g_sPdfCreatorPrinter, 5000)
-				Return False
+				Return
 			EndIf
 		WEnd
 		_YDTool_SetTrayTip(_YDGVars_Get("sAppTitle"), "Bascule vers imprimante : " & $g_sPdfCreatorPrinter, 5000)
