@@ -9,9 +9,9 @@
 ; #ENVIRONMENT# =================================================================================================================
 ; AutoIt3Wrapper
 #AutoIt3Wrapper_Res_ProductName=DIP
-#AutoIt3Wrapper_Res_Description=Dématérialisation des Impressions PROGRES
-#AutoIt3Wrapper_Res_ProductVersion=0.0.6
-#AutoIt3Wrapper_Res_FileVersion=0.0.6
+#AutoIt3Wrapper_Res_Description=Dematerialisation des Impressions PROGRES
+#AutoIt3Wrapper_Res_ProductVersion=0.0.7
+#AutoIt3Wrapper_Res_FileVersion=0.0.7
 #AutoIt3Wrapper_Res_CompanyName=CNAMTS/CPAM_ARTOIS/APPLINAT
 #AutoIt3Wrapper_Res_LegalCopyright=yann.daniel@assurance-maladie.fr
 #AutoIt3Wrapper_Res_Language=1036
@@ -230,9 +230,9 @@ Func _ModuleLiasses()
 	_CheckContext()
 	; On ne travaille que si PROGRES est lance
 	If ProcessExists($g_sProgresExeFileName) Then
-		; On verifie si l'impression a démarré
+		; On verifie si l'impression a demarre
 		If _IsPrintStartFromMcoDatFile() Then
-			_YDLogger_Log("Impression liasse démarrée !!!!", $sFuncName)
+			_YDLogger_Log("Impression liasse detectee !!!!", $sFuncName)
 			; On suspend PROGRES
 			_YDTool_SuspendProcessSwitch($g_sProgresExeFileName, True)
 			Sleep(1000)
@@ -259,7 +259,7 @@ Func _ModuleLiasses()
 						Local $sAgent = $aMcoDatVar[2]
 					Case "ACTION"
 						Local $bEcheancierAuto = False
-						If $aMcoDatVar[2] == "Trait. éch auto" Then
+						If $aMcoDatVar[2] == "Trait. ech auto" Then
 							$bEcheancierAuto = True
 						EndIf
 				EndSwitch
@@ -294,6 +294,7 @@ Func _ModuleLiasses()
 					_YDTool_SetDefaultPrinter($g_sPdfCreatorPrinter)
 					If $i > 20 Then
 						_YDTool_SetTrayTip(_YDGVars_Get("sAppTitle"), "Bascule impossible vers imprimante : " & $g_sPdfCreatorPrinter, 5000)
+						_YDTool_SuspendProcessSwitch($g_sProgresExeFileName, False)
 						Return False
 					EndIf
 				WEnd
@@ -304,7 +305,7 @@ Func _ModuleLiasses()
 				Sleep(1000)
 				; On verifie si l'impression est terminee
 				If _IsPrintStopFromTechLogFile() Then
-					_YDLogger_Log("Impression liasse terminée !", $sFuncName)
+					_YDLogger_Log("Impression liasse terminee !", $sFuncName)
 					; On retourne sur l'imprimante par defaut
 					_YDTool_SetDefaultPrinter($g_sDefaultPrinter)
 					_YDTool_SetTrayTip(_YDGVars_Get("sAppTitle"), "Retour sur imprimante : " & $g_sDefaultPrinterName, 5000)
@@ -325,17 +326,18 @@ EndFunc
 ;================================================================================================================================
 Func _ModuleInjecteurs()
 	Local $sFuncName = "_ModuleInjecteurs"
-	;Local $i
+	Local $bProgresInjecteurEtatStarted = False
 	Local $sTestsPath
 	; On verifie le contexte
 	_CheckContext()
 	; On ne travaille que si PROGRES est lance
 	If ProcessExists($g_sProgresExeFileName) Then
 		; ---------------------------
-		; On verifie si l'impression d'un état a démarré
+		; On verifie si l'impression d'un etat a demarre
 		If _IsPrintStartFromEtatRelanceDatFile() Then
-			_YDLogger_Log("Impression état RELANCE démarrée !!!!", $sFuncName)
-			; On patiente tant que le fichier n'est pas libéré ou 5 secondes
+			_YDLogger_Log("Impression fichier etat detecte : RELANCE", $sFuncName)
+			$bProgresInjecteurEtatStarted = True
+			; On patiente tant que le fichier n'est pas libere ou 5 secondes
 			For $i = 1 To 500
 				If FileOpen($g_sProgresInjecteursEtatRelanceDatFilePath) <> -1 Then ExitLoop
 				Sleep(10)
@@ -345,8 +347,9 @@ Func _ModuleInjecteurs()
 			_YDTool_CopyFile($g_sProgresInjecteursEtatRelanceDatFilePath, $sTestsPath)
 		EndIf
 		If _IsPrintStartFromEtatRejetDatFile() Then
-			_YDLogger_Log("Impression état REJET démarrée !!!!", $sFuncName)
-			; On patiente tant que le fichier n'est pas libéré ou 5 secondes
+			_YDLogger_Log("Impression fichier etat detecte : REJET", $sFuncName)
+			$bProgresInjecteurEtatStarted = True
+			; On patiente tant que le fichier n'est pas libere ou 5 secondes
 			For $i = 1 To 500
 				If FileOpen($g_sProgresInjecteursEtatRejetDatFilePath) <> -1 Then ExitLoop
 				Sleep(10)
@@ -356,8 +359,9 @@ Func _ModuleInjecteurs()
 			_YDTool_CopyFile($g_sProgresInjecteursEtatRejetDatFilePath, $sTestsPath)
 		EndIf
 		If _IsPrintStartFromEtatOkDatFile() Then
-			_YDLogger_Log("Impression état OK démarrée !!!!", $sFuncName)
-			; On patiente tant que le fichier n'est pas libéré ou 5 secondes
+			_YDLogger_Log("Impression fichier etat detecte : OK", $sFuncName)
+			$bProgresInjecteurEtatStarted = True
+			; On patiente tant que le fichier n'est pas libere ou 5 secondes
 			For $i = 1 To 500
 				If FileOpen($g_sProgresInjecteursEtatOkDatFilePath) <> -1 Then ExitLoop
 				Sleep(10)
@@ -367,8 +371,9 @@ Func _ModuleInjecteurs()
 			_YDTool_CopyFile($g_sProgresInjecteursEtatOkDatFilePath, $sTestsPath)
 		EndIf
 		If _IsPrintStartFromEtatAvDatFile() Then
-			_YDLogger_Log("Impression état AV démarrée !!!!", $sFuncName)
-			; On patiente tant que le fichier n'est pas libéré ou 5 secondes
+			_YDLogger_Log("Impression fichier etat detecte : AV", $sFuncName)
+			$bProgresInjecteurEtatStarted = True
+			; On patiente tant que le fichier n'est pas libere ou 5 secondes
 			For $i = 1 To 500
 				If FileOpen($g_sProgresInjecteursEtatAvDatFilePath) <> -1 Then ExitLoop
 				Sleep(10)
@@ -378,22 +383,23 @@ Func _ModuleInjecteurs()
 			_YDTool_CopyFile($g_sProgresInjecteursEtatAvDatFilePath, $sTestsPath)
 		EndIf
 		; ----------------------------
-		If ($g_bProgresInjecteursEtatRelanceDatFileChanged Or $g_bProgresInjecteursEtatRejetDatFileChanged Or $g_bProgresInjecteursEtatOkDatFileChanged Or $g_bProgresInjecteursEtatAvDatFileChanged) Then
+		If $bProgresInjecteurEtatStarted Then
+			_YDLogger_Log("Traitement injecteur detecte : on doit basculer ...", $sFuncName)
 			; On suspend PROGRES
 			_YDTool_SuspendProcessSwitch($g_sProgresExeFileName, True)
 			Sleep(1000)
-			; On détermine le site et le nom du fichier
+			; On determine le site et le nom du fichier
 			$g_sSiteNetworkPath = ($g_sSite = "ARRAS") ? $g_sProgresLiassesArrasPath : $g_sProgresLiassesLensPath
 			_YDLogger_Var("$g_sSiteNetworkPath", $g_sSiteNetworkPath)
 			Local $sAutosaveDirectory = $g_sSiteNetworkPath & "\" & @YEAR & @MON & @MDAY & "\"
-			Local $sAutosaveFilename = @YEAR & @MON & @MDAY & "-" & @HOUR & @MIN & @SEC & "_etat"
+			Local $sAutosaveFilename = @YEAR & @MON & @MDAY & "-" & @HOUR & @MIN & @SEC & "_<DocumentFilename>"
 			; On modifie le registre pour modifier le Path et le nom du fichier
 			_YDLogger_Log("Modification du registre", $sFuncName, 1)
 			_YDLogger_Var("$sAutosaveDirectory", $sAutosaveDirectory, $sFuncName, 1)
 			_YDLogger_Var("$sAutosaveFilename", $sAutosaveFilename, $sFuncName, 1)
 			RegWrite("HKEY_CURRENT_USER\Software\PDFCreator\Profiles\" & $g_sPdfCreatorPrinter & "\Program", "AutosaveDirectory", "REG_SZ", $sAutosaveDirectory)
 			RegWrite("HKEY_CURRENT_USER\Software\PDFCreator\Profiles\" & $g_sPdfCreatorPrinter & "\Program", "AutosaveFilename", "REG_SZ", $sAutosaveFilename)
-			RegWrite("HKEY_CURRENT_USER\Software\PDFCreator\Profiles\" & $g_sPdfCreatorPrinter & "\Program", "AutosaveStartStandardProgram", "REG_SZ", $g_sProgresInjecteursAutoOpenOutPutFile)
+			RegWrite("HKEY_CURRENT_USER\Software\PDFCreator\Profiles\" & $g_sPdfCreatorPrinter & "\Program", "AutosaveStartStandardProgram", "REG_SZ", 0)
 			; On bascule sur PDFCreator
 			$i = 0
 			_YDTool_SetDefaultPrinter($g_sPdfCreatorPrinter)
@@ -403,27 +409,29 @@ Func _ModuleInjecteurs()
 				_YDTool_SetDefaultPrinter($g_sPdfCreatorPrinter)
 				If $i > 20 Then
 					_YDTool_SetTrayTip(_YDGVars_Get("sAppTitle"), "Bascule impossible vers imprimante : " & $g_sPdfCreatorPrinter, 5000)
+					_YDTool_SuspendProcessSwitch($g_sProgresExeFileName, False)
 					Return False
 				EndIf
 			WEnd
 			_YDTool_SetTrayTip(_YDGVars_Get("sAppTitle"), "Bascule vers imprimante : " & $g_sPdfCreatorPrinter, 5000)
 			; On reactive PROGRES
 			_YDTool_SuspendProcessSwitch($g_sProgresExeFileName, False)
+			_YDLogger_Log("Traitement injecteur : termine", $sFuncName)
 			; L'impression se lance ...
-			Sleep(1000)
+			;~ Sleep(1000)
 			; On verifie si l'impression est terminee
-			If _IsPrintStopFromInjLogFile() Then
-				_YDLogger_Log("Impression injecteur terminée !", $sFuncName)
-				; On retourne sur l'imprimante par defaut
-				_YDTool_SetDefaultPrinter($g_sDefaultPrinter)
-				_YDTool_SetTrayTip(_YDGVars_Get("sAppTitle"), "Retour sur imprimante : " & $g_sDefaultPrinterName, 5000)
-			EndIf
+			;~ If _IsPrintStopFromInjLogFile() Then
+			;~ 	_YDLogger_Log("Impression injecteur terminee !", $sFuncName)
+			;~ 	; On retourne sur l'imprimante par defaut
+			;~ 	_YDTool_SetDefaultPrinter($g_sDefaultPrinter)
+			;~ 	_YDTool_SetTrayTip(_YDGVars_Get("sAppTitle"), "Retour sur imprimante : " & $g_sDefaultPrinterName, 5000)
+			;~ EndIf
 		EndIf
 	EndIf
 EndFunc
 
 ; #FUNCTION# ====================================================================================================================
-; Description ...: Traitement des impressions d'ouvertures de journée PROGRES
+; Description ...: Traitement des impressions d'ouvertures de journee PROGRES
 ; Syntax ........: _ModuleOuvertures()
 ; Parameters ....:
 ; Return values .:
@@ -435,7 +443,7 @@ Func _ModuleOuvertures()
 	Local $sFuncName = "_ModuleOuvertures"
 	; On verifie le contexte
 	_CheckContext()
-	; On ne travaille que si PROGRES est lance et si la fenetre d'ouverture de la journée PROGRES est détectée
+	; On ne travaille que si PROGRES est lance et si la fenetre d'ouverture de la journee PROGRES est detectee
 	If ProcessExists($g_sProgresExeFileName) And WinActive($g_sProgresOuvertureWindowTitle) Then
 		_YDLogger_Log("Fenetre ouverture PROGRES : ouverte", $sFuncName)
 		; On recupere l'UGE
@@ -467,7 +475,7 @@ Func _ModuleOuvertures()
 		; On attend que la fenetre d'ouverture progres soit fermee
 		WinWaitClose($g_sProgresOuvertureWindowTitle)
 		_YDLogger_Log("Fenetre ouverture PROGRES : fermee", $sFuncName)
-		; Tant que PROGRES existe, on verifie que l'UGE du NTIC_xxxx.LOG soit egale à la nouvelle UGE
+		; Tant que PROGRES existe, on verifie que l'UGE du NTIC_xxxx.LOG soit egale a la nouvelle UGE
 		While ProcessExists($g_sProgresExeFileName)
 			Local $sNticUge = _GetUGEFromNticLogFile()
 			If $sNticUge = $sTechUge Then
@@ -484,7 +492,7 @@ Func _ModuleOuvertures()
 			ShellExecute($sAutosaveDirectory)
 		EndIf
 ;~ 		If ProcessExists($g_sProgresExeFileName) Then
-;~ 			Local $iInputOpenFolder = MsgBox(4, _YDGVars_Get("sAppTitle"), "Souhaitez-vous ouvrir le dossier des liasses d'Ouverture de Journée PROGRES ?")
+;~ 			Local $iInputOpenFolder = MsgBox(4, _YDGVars_Get("sAppTitle"), "Souhaitez-vous ouvrir le dossier des liasses d'Ouverture de Journee PROGRES ?")
 ;~ 			If ($iInputOpenFolder = 6) Then
 ;~ 				ShellExecute($g_sSiteNetworkPath)
 ;~ 			Endif
@@ -493,7 +501,7 @@ Func _ModuleOuvertures()
 EndFunc
 
 ; #FUNCTION# ====================================================================================================================
-; Description ...: Permet de verifier si le debut de l'impression de liasse a été demandé via le DAT du NSREPORT
+; Description ...: Permet de verifier si le debut de l'impression de liasse a ete demande via le DAT du NSREPORT
 ; Syntax ........: _IsPrintStartFromMcoDatFile()
 ; Parameters ....:
 ; Return values .: True / False
@@ -516,7 +524,7 @@ Func _IsPrintStartFromMcoDatFile()
 EndFunc
 
 ; #FUNCTION# ====================================================================================================================
-; Description ...: Permet de verifier si le debut de l'impression d'un état RELANCE a été demandé via le DAT du NSREPORT
+; Description ...: Permet de verifier si le debut de l'impression d'un etat RELANCE a ete demande via le DAT du NSREPORT
 ; Syntax ........: _IsPrintStartFromEtatRelanceDatFile()
 ; Parameters ....:
 ; Return values .: True / False
@@ -543,7 +551,7 @@ Func _IsPrintStartFromEtatRelanceDatFile()
 EndFunc
 
 ; #FUNCTION# ====================================================================================================================
-; Description ...: Permet de verifier si le debut de l'impression d'un état REJET a été demandé via le DAT du NSREPORT
+; Description ...: Permet de verifier si le debut de l'impression d'un etat REJET a ete demande via le DAT du NSREPORT
 ; Syntax ........: _IsPrintStartFromEtatRejetDatFile()
 ; Parameters ....:
 ; Return values .: True / False
@@ -570,7 +578,7 @@ Func _IsPrintStartFromEtatRejetDatFile()
 EndFunc
 
 ; #FUNCTION# ====================================================================================================================
-; Description ...: Permet de verifier si le debut de l'impression d'un état OK a été demandé via le DAT du NSREPORT
+; Description ...: Permet de verifier si le debut de l'impression d'un etat OK a ete demande via le DAT du NSREPORT
 ; Syntax ........: _IsPrintStartFromEtatOkDatFile()
 ; Parameters ....:
 ; Return values .: True / False
@@ -597,7 +605,7 @@ Func _IsPrintStartFromEtatOkDatFile()
 EndFunc
 
 ; #FUNCTION# ====================================================================================================================
-; Description ...: Permet de verifier si le debut de l'impression d'un état AV a été demandé via le DAT du NSREPORT
+; Description ...: Permet de verifier si le debut de l'impression d'un etat AV a ete demande via le DAT du NSREPORT
 ; Syntax ........: _IsPrintStartFromEtatAvDatFile()
 ; Parameters ....:
 ; Return values .: True / False
@@ -624,7 +632,7 @@ Func _IsPrintStartFromEtatAvDatFile()
 EndFunc
 
 ; #FUNCTION# ====================================================================================================================
-; Description ...: Permet de verifier si la fin de l'impression a été détectée dans le fichier TECH_xxxxxxx.LOG
+; Description ...: Permet de verifier si la fin de l'impression a ete detectee dans le fichier TECH_xxxxxxx.LOG
 ; Syntax ........: _IsPrintStopFromTechLogFile()
 ; Parameters ....:
 ; Return values .: True / False
@@ -674,7 +682,7 @@ Func _IsPrintStopFromTechLogFile()
 EndFunc
 
 ; #FUNCTION# ====================================================================================================================
-; Description ...: Permet de verifier si la fin de l'impression a été détectée dans le fichier INJ_xxxxxxx.LOG
+; Description ...: Permet de verifier si la fin de l'impression a ete detectee dans le fichier INJ_xxxxxxx.LOG
 ; Syntax ........: _IsPrintStopFromInjLogFile()
 ; Parameters ....:
 ; Return values .: True / False
@@ -724,7 +732,7 @@ Func _IsPrintStopFromInjLogFile()
 EndFunc
 
 ; #FUNCTION# ====================================================================================================================
-; Description ...: Permet de récupérer l'UGE via le fichier TECH_xxxxxxx.LOG
+; Description ...: Permet de recuperer l'UGE via le fichier TECH_xxxxxxx.LOG
 ; Syntax ........: _GetUGEFromTechLogFile()
 ; Parameters ....:
 ; Return values .:
@@ -738,7 +746,7 @@ Func _GetUGEFromTechLogFile()
 	Local $hLogFile
 	Local $sPattern = "F_LNPG_USER0 Appel du centre : "
 	Local $sUGE = "0000"
-	; On ne fait des recherches que si la fenetre d'ouverture de la journée PROGRES est détectée
+	; On ne fait des recherches que si la fenetre d'ouverture de la journee PROGRES est detectee
 	If WinExists($g_sProgresOuvertureWindowTitle) Then
 		$hLogFile = FileOpen($g_sProgresTechLogFilePath, 0)
 		If $hLogFile = -1 Then
@@ -777,7 +785,7 @@ Func _GetUGEFromTechLogFile()
 EndFunc
 
 ; #FUNCTION# ====================================================================================================================
-; Description ...: Permet de récupérer l'UGE via le fichier NTIC_xxxxxxx.LOG
+; Description ...: Permet de recuperer l'UGE via le fichier NTIC_xxxxxxx.LOG
 ; Syntax ........: _GetUGEFromNticLogFile()
 ; Parameters ....:
 ; Return values .:
@@ -834,7 +842,7 @@ Func _GetUGEFromNticLogFile()
 EndFunc
 
 ; #FUNCTION# ====================================================================================================================
-; Description ...: Permet de vérifier si l'imprimante g_sPdfCreatorPrinter est bien installee
+; Description ...: Permet de verifier si l'imprimante g_sPdfCreatorPrinter est bien installee
 ; Syntax.........: _IsPdfCreatorPrinterInstalled()
 ; Parameters ....:
 ; Return values .: Success      - True
@@ -869,14 +877,14 @@ EndFunc
 Func _RestoreOnError()
 	Local $sFuncName = "_RestoreOnError"
 	If @error <> 0 Then
-		_YDTool_SetTrayTip(_YDGVars_Get("sAppTitle"), "Une anomalie a été détectée ! " & @CRLF & "Réactivation de PROGRES en cours ..." & @CRLF & "Retour sur imprimante : " & $g_sDefaultPrinterName, 5000, $TIP_ICONASTERISK)
+		_YDTool_SetTrayTip(_YDGVars_Get("sAppTitle"), "Une anomalie a ete detectee ! " & @CRLF & "Reactivation de PROGRES en cours ..." & @CRLF & "Retour sur imprimante : " & $g_sDefaultPrinterName, 5000, $TIP_ICONASTERISK)
 		; On retourne sur l'imprimante par defaut
 		_YDTool_SetDefaultPrinter($g_sDefaultPrinter)
 		; On retourne sur l'imprimante par defaut
 		If Not _YDTool_SuspendProcessSwitch($g_sProgresExeFileName, False) Then
 			_YDLogger_Error("Erreur lors de la reactivation de Progres !", $sFuncName)
 		EndIf
-		_YDTool_SetTrayTip(_YDGVars_Get("sAppTitle"), "Fermeture de " & _YDGVars_Get("sAppTitle") & " suite à une anomalie !", 5000, $TIP_ICONASTERISK)
+		_YDTool_SetTrayTip(_YDGVars_Get("sAppTitle"), "Fermeture de " & _YDGVars_Get("sAppTitle") & " suite a une anomalie !", 5000, $TIP_ICONASTERISK)
 	Endif
 EndFunc
 
